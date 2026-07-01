@@ -3,6 +3,8 @@ const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
 
+const errorHandler = require("./middleware/errorHandler");
+
 const app = express();
 
 const allowedOrigins = process.env.CLIENT_URL
@@ -32,11 +34,12 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: "Route introuvable",
-  });
+app.use((req, res, next) => {
+  const error = new Error("Route introuvable");
+  error.statusCode = 404;
+  next(error);
 });
+
+app.use(errorHandler);
 
 module.exports = app;
