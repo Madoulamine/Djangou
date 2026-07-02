@@ -4,6 +4,7 @@ const helmet = require("helmet");
 const morgan = require("morgan");
 
 const errorHandler = require("./middleware/errorHandler");
+const { singleFileUpload } = require("./config/multer");
 
 const app = express();
 
@@ -33,6 +34,57 @@ app.get("/api/health", (req, res) => {
     service: "Djangou API",
   });
 });
+
+app.get("/api/health/firestore", async (req, res, next) => {
+  try {
+    const { checkFirestoreConnection } = require("./config/firebase");
+
+    await checkFirestoreConnection();
+
+    res.status(200).json({
+      success: true,
+      message: "Firestore OK",
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+if (process.env.NODE_ENV !== "production") {
+  app.post(
+    "/api/health/upload",
+    singleFileUpload("file"),
+    async (req, res, next) => {
+      try {
+        const { uploadBufferToCloudinary } = require("./config/cloudinary");
+
+        if (!req.file) {
+          const error = new Error("Aucun fichier envoye.");
+          error.statusCode = 400;
+          throw error;
+        }
+
+        const uploadResult = await uploadBufferToCloudinary(req.file, {
+          folder: "djangou/health",
+        });
+
+        res.status(201).json({
+          success: true,
+          message: "Upload Cloudinary OK",
+          data: uploadResult,
+        });
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
+
+  app.get("/api/health/error", (req, res, next) => {
+    const error = new Error("Erreur volontaire de test.");
+    error.statusCode = 418;
+    next(error);
+  });
+}
 
 app.use((req, res, next) => {
   const error = new Error("Route introuvable");
