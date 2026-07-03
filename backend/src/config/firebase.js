@@ -1,5 +1,17 @@
 const path = require("path");
-const admin = require("firebase-admin");
+const {
+  initializeApp,
+  getApps,
+  getApp,
+  cert,
+} = require("firebase-admin/app");
+const {
+  getFirestore,
+  FieldValue,
+  Timestamp,
+} = require("firebase-admin/firestore");
+const { getAuth } = require("firebase-admin/auth");
+const { getStorage } = require("firebase-admin/storage");
 const dotenv = require("dotenv");
 
 dotenv.config({ path: path.resolve(__dirname, "../../.env") });
@@ -28,7 +40,7 @@ const serviceAccount = {
 };
 
 const appOptions = {
-  credential: admin.credential.cert(serviceAccount),
+  credential: cert(serviceAccount),
 };
 
 if (process.env.FIREBASE_STORAGE_BUCKET) {
@@ -41,12 +53,12 @@ if (process.env.FIREBASE_DATABASE_URL) {
 
 // Evite de reinitialiser Firebase si le module est importe plusieurs fois.
 const firebaseApp =
-  admin.apps.length > 0 ? admin.app() : admin.initializeApp(appOptions);
+  getApps().length > 0 ? getApp() : initializeApp(appOptions);
 
-const db = admin.firestore();
-const auth = admin.auth();
+const db = getFirestore(firebaseApp);
+const auth = getAuth(firebaseApp);
 const bucket = process.env.FIREBASE_STORAGE_BUCKET
-  ? admin.storage().bucket()
+  ? getStorage(firebaseApp).bucket()
   : null;
 
 db.settings({ ignoreUndefinedProperties: true });
@@ -57,12 +69,11 @@ async function checkFirestoreConnection() {
 }
 
 module.exports = {
-  admin,
   firebaseApp,
   db,
   auth,
   bucket,
   checkFirestoreConnection,
-  FieldValue: admin.firestore.FieldValue,
-  Timestamp: admin.firestore.Timestamp,
+  FieldValue,
+  Timestamp,
 };
