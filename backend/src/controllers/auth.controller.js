@@ -1,5 +1,10 @@
 const { validationResult } = require("express-validator");
-const { registerUser, loginUser } = require("../services/auth.service");
+const {
+  registerUser,
+  loginUser,
+  refreshAccessToken,
+  logoutUser,
+} = require("../services/auth.service");
 
 function createValidationError(errors) {
   const error = new Error(errors.array({ onlyFirstError: true })[0].msg);
@@ -30,7 +35,7 @@ async function register(req, res, next) {
   }
 }
 
-// Authentifie un utilisateur et renvoie un token JWT.
+// Authentifie un utilisateur et renvoie un access token et un refresh token.
 async function login(req, res, next) {
   try {
     const errors = validationResult(req);
@@ -40,16 +45,55 @@ async function login(req, res, next) {
     }
 
     const { email, password } = req.body;
-    const { token, user } = await loginUser({ email, password });
+    const { accessToken, refreshToken, user } = await loginUser({
+      email,
+      password,
+    });
 
     res.status(200).json({
       success: true,
       message: "Connexion reussie.",
-      data: { token, user },
+      data: { accessToken, refreshToken, user },
     });
   } catch (error) {
     next(error);
   }
 }
 
-module.exports = { register, login };
+// Genere un nouvel access token a partir d'un refresh token valide.
+async function refresh(req, res, next) {
+  try {
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      throw createValidationError(errors);
+    }
+
+    const { refreshToken } = req.body;
+    const { accessToken } = await refreshAccessToken({ refreshToken });
+
+    res.status(200).json({
+      success: true,
+      message: "Token rafraichi avec succes.",
+      data: { accessToken },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// Invalide le refresh token de l'utilisateur authentifie.
+async function logout(req, res, next) {
+  try {
+    await logoutUser(req.user.id);
+
+    res.status(200).json({
+      success: true,
+      message: "Deconnexion reussie.",
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+module.exports = { register, login, refresh, logout };

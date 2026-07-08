@@ -1,0 +1,78 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2026-07-03T00:00:00.000Z",
+  "__export_source": "djangou-backend",
+  "resources": [
+    {
+      "_id": "wrk_djangou",
+      "_type": "workspace",
+      "name": "Djangou API",
+      "description": "Collection des routes backend Djangou (sante + auth)",
+      "scope": "collection"
+    },
+    {
+      "_id": "env_base",
+      "_type": "environment",
+      "parentId": "wrk_djangou",
+      "name": "Local",
+      "data": {
+        "base_url": "http://localhost:5000"
+      }
+    },
+    {
+      "_id": "fld_health",
+      "_type": "request_group",
+      "parentId": "wrk_djangou",
+      "name": "Health"
+    },
+    {
+      "_id": "req_health",
+      "_type": "request",
+      "parentId": "fld_health",
+      "name": "GET /api/health",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/health"
+    },
+    {
+      "_id": "req_health_firestore",
+      "_type": "request",
+      "parentId": "fld_health",
+      "name": "GET /api/health/firestore",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/health/firestore"
+    },
+    {
+      "_id": "fld_auth",
+      "_type": "request_group",
+      "parentId": "wrk_djangou",
+      "name": "Auth"
+    },
+    {
+      "_id": "req_register",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "POST /api/auth/register",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/auth/register",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nom\": \"Diallo\",\n  \"prenom\": \"Amina\",\n  \"email\": \"amina.diallo@example.com\",\n  \"password\": \"secret123\",\n  \"role\": \"ELEVE\"\n}"
+      }
+    },
+    {
+      "_id": "req_login",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "POST /api/auth/login",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/auth/login",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"amina.diallo@example.com\",\n  \"password\": \"secret123\"\n}"
+      }
+    }
+  ]
+}

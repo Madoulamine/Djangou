@@ -40,6 +40,10 @@ function authMiddleware(req, res, next) {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
+    if (decoded.type === "refresh") {
+      throw createAuthError("Ce token ne peut pas etre utilise pour s'authentifier.");
+    }
+
     req.user = {
       id: decoded.id || decoded.userId || decoded.sub,
       email: decoded.email,

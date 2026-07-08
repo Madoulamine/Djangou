@@ -25,4 +25,8 @@ const loginValidators = [
   body("password").notEmpty().withMessage("Le mot de passe est requis."),
 ];
 
-module.exports = { registerValidators, loginValidators };
+const refreshValidators = [
+  body("refreshToken").notEmpty().withMessage("Le refresh token est requis."),
+];
+
+module.exports = { registerValidators, loginValidators, refreshValidators };

@@ -1,11 +1,13 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 const { db, FieldValue } = require("../config/firebase");
 const {
   USER_ROLES,
   COLLECTIONS,
   BCRYPT_SALT_ROUNDS,
-  JWT_EXPIRES_IN,
+  ACCESS_TOKEN_EXPIRES_IN,
+  REFRESH_TOKEN_EXPIRES_IN,
 } = require("../utils/constants");
 
 function createConflictError(message) {
@@ -73,21 +75,51 @@ async function registerUser({ nom, prenom, email, password, role }) {
   };
 }
 
-function signToken(user) {
+function assertJwtSecret() {
   if (!process.env.JWT_SECRET) {
     const error = new Error("Configuration JWT manquante.");
     error.statusCode = 500;
     throw error;
   }
+}
+
+function signAccessToken(user) {
+  assertJwtSecret();
 
   return jwt.sign(
-    { id: user.id, email: user.email, role: user.role },
+    { id: user.id, email: user.email, role: user.role, type: "access" },
     process.env.JWT_SECRET,
-    { expiresIn: JWT_EXPIRES_IN }
+    { expiresIn: ACCESS_TOKEN_EXPIRES_IN }
   );
 }
 
-// Verifie les identifiants et renvoie un token JWT avec les infos publiques de l'utilisateur.
+function signRefreshToken(user) {
+  assertJwtSecret();
+
+  return jwt.sign(
+    { id: user.id, type: "refresh" },
+    process.env.JWT_SECRET,
+    { expiresIn: REFRESH_TOKEN_EXPIRES_IN }
+  );
+}
+
+// Empreinte non reversible du refresh token, seule stockee en base.
+function hashToken(token) {
+  return crypto.createHash("sha256").update(token).digest("hex");
+}
+
+function publicUser(user) {
+  return {
+    id: user.id,
+    nom: user.nom,
+    prenom: user.prenom,
+    email: user.email,
+    role: user.role,
+    isBlocked: user.isBlocked,
+  };
+}
+
+// Verifie les identifiants, genere un access token et un refresh token, et stocke ce dernier (hashe) en base.
 async function loginUser({ email, password }) {
   const normalizedEmail = email.trim().toLowerCase();
   const user = await findUserByEmail(normalizedEmail);
@@ -100,19 +132,64 @@ async function loginUser({ email, password }) {
     throw createAuthError("Ce compte a ete bloque.");
   }
 
-  const token = signToken(user);
+  const accessToken = signAccessToken(user);
+  const refreshToken = signRefreshToken(user);
 
-  return {
-    token,
-    user: {
-      id: user.id,
-      nom: user.nom,
-      prenom: user.prenom,
-      email: user.email,
-      role: user.role,
-      isBlocked: user.isBlocked,
-    },
-  };
+  await db.collection(COLLECTIONS.USERS).doc(user.id).update({
+    refreshTokenHash: hashToken(refreshToken),
+    updatedAt: FieldValue.serverTimestamp(),
+  });
+
+  return { accessToken, refreshToken, user: publicUser(user) };
 }
 
-module.exports = { registerUser, emailExists, loginUser };
+// Verifie le refresh token fourni contre celui stocke en base et renvoie un nouvel access token.
+async function refreshAccessToken({ refreshToken }) {
+  assertJwtSecret();
+
+  let decoded;
+
+  try {
+    decoded = jwt.verify(refreshToken, process.env.JWT_SECRET);
+  } catch (error) {
+    throw createAuthError("Refresh token invalide ou expire.");
+  }
+
+  if (decoded.type !== "refresh") {
+    throw createAuthError("Refresh token invalide.");
+  }
+
+  const userDoc = await db.collection(COLLECTIONS.USERS).doc(decoded.id).get();
+
+  if (!userDoc.exists) {
+    throw createAuthError("Utilisateur introuvable.");
+  }
+
+  const user = userDoc.data();
+
+  if (user.refreshTokenHash !== hashToken(refreshToken)) {
+    throw createAuthError("Refresh token invalide ou revoque.");
+  }
+
+  if (user.isBlocked) {
+    throw createAuthError("Ce compte a ete bloque.");
+  }
+
+  return { accessToken: signAccessToken(user) };
+}
+
+// Invalide le refresh token stocke pour l'utilisateur (deconnexion).
+async function logoutUser(userId) {
+  await db.collection(COLLECTIONS.USERS).doc(userId).update({
+    refreshTokenHash: FieldValue.delete(),
+    updatedAt: FieldValue.serverTimestamp(),
+  });
+}
+
+module.exports = {
+  registerUser,
+  emailExists,
+  loginUser,
+  refreshAccessToken,
+  logoutUser,
+};
