@@ -29,4 +29,13 @@ const refreshValidators = [
   body("refreshToken").notEmpty().withMessage("Le refresh token est requis."),
 ];
 
-module.exports = { registerValidators, loginValidators, refreshValidators };
+const logoutValidators = [
+  body("refreshToken").notEmpty().withMessage("Le refresh token est requis."),
+];
+
+module.exports = {
+  registerValidators,
+  loginValidators,
+  refreshValidators,
+  logoutValidators,
+};

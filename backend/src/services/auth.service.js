@@ -108,6 +108,26 @@ function hashToken(token) {
   return crypto.createHash("sha256").update(token).digest("hex");
 }
 
+function verifyRefreshToken(refreshToken) {
+  assertJwtSecret();
+
+  try {
+    const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET);
+
+    if (decoded.type !== "refresh") {
+      throw createAuthError("Refresh token invalide.");
+    }
+
+    return decoded;
+  } catch (error) {
+    if (error.statusCode === 401) {
+      throw error;
+    }
+
+    throw createAuthError("Refresh token invalide ou expire.");
+  }
+}
+
 function publicUser(user) {
   return {
     id: user.id,
@@ -145,19 +165,7 @@ async function loginUser({ email, password }) {
 
 // Verifie le refresh token fourni contre celui stocke en base et renvoie un nouvel access token.
 async function refreshAccessToken({ refreshToken }) {
-  assertJwtSecret();
-
-  let decoded;
-
-  try {
-    decoded = jwt.verify(refreshToken, process.env.JWT_SECRET);
-  } catch (error) {
-    throw createAuthError("Refresh token invalide ou expire.");
-  }
-
-  if (decoded.type !== "refresh") {
-    throw createAuthError("Refresh token invalide.");
-  }
+  const decoded = verifyRefreshToken(refreshToken);
 
   const userDoc = await db.collection(COLLECTIONS.USERS).doc(decoded.id).get();
 
@@ -178,9 +186,23 @@ async function refreshAccessToken({ refreshToken }) {
   return { accessToken: signAccessToken(user) };
 }
 
-// Invalide le refresh token stocke pour l'utilisateur (deconnexion).
-async function logoutUser(userId) {
-  await db.collection(COLLECTIONS.USERS).doc(userId).update({
+// Verifie puis supprime le refresh token stocke pour terminer la session.
+async function logoutUser({ refreshToken }) {
+  const decoded = verifyRefreshToken(refreshToken);
+  const userRef = db.collection(COLLECTIONS.USERS).doc(decoded.id);
+  const userDoc = await userRef.get();
+
+  if (!userDoc.exists) {
+    throw createAuthError("Utilisateur introuvable.");
+  }
+
+  const user = userDoc.data();
+
+  if (user.refreshTokenHash !== hashToken(refreshToken)) {
+    throw createAuthError("Refresh token invalide ou deja revoque.");
+  }
+
+  await userRef.update({
     refreshTokenHash: FieldValue.delete(),
     updatedAt: FieldValue.serverTimestamp(),
   });

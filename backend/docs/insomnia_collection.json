@@ -73,6 +73,32 @@
         "mimeType": "application/json",
         "text": "{\n  \"email\": \"amina.diallo@example.com\",\n  \"password\": \"secret123\"\n}"
       }
+    },
+    {
+      "_id": "req_refresh",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "POST /api/auth/refresh",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/auth/refresh",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"refreshToken\": \"COLLER_REFRESH_TOKEN_ICI\"\n}"
+      }
+    },
+    {
+      "_id": "req_logout",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "POST /api/auth/logout",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/auth/logout",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"refreshToken\": \"COLLER_REFRESH_TOKEN_ICI\"\n}"
+      }
     }
   ]
 }

@@ -82,10 +82,17 @@ async function refresh(req, res, next) {
   }
 }
 
-// Invalide le refresh token de l'utilisateur authentifie.
+// Invalide le refresh token fourni par le client.
 async function logout(req, res, next) {
   try {
-    await logoutUser(req.user.id);
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      throw createValidationError(errors);
+    }
+
+    const { refreshToken } = req.body;
+    await logoutUser({ refreshToken });
 
     res.status(200).json({
       success: true,
