@@ -1,13 +1,16 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
+const { v4: uuidv4 } = require("uuid");
 const { db, FieldValue } = require("../config/firebase");
+const { sendResetPasswordEmail } = require("./email.service");
 const {
   USER_ROLES,
   COLLECTIONS,
   BCRYPT_SALT_ROUNDS,
   ACCESS_TOKEN_EXPIRES_IN,
   REFRESH_TOKEN_EXPIRES_IN,
+  RESET_TOKEN_EXPIRES_MS,
 } = require("../utils/constants");
 
 function createConflictError(message) {
@@ -208,10 +211,106 @@ async function logoutUser({ refreshToken }) {
   });
 }
 
+// Cree un token UUID de reinitialisation, le stocke (hashe) en base et envoie un email.
+async function requestPasswordReset({ email }) {
+  const normalizedEmail = email.trim().toLowerCase();
+  const user = await findUserByEmail(normalizedEmail);
+
+  // On ne revele pas si l'email existe ou non pour eviter l'enumeration de comptes.
+  if (!user) return;
+
+  // UUID v4 : suffisamment aleatoire et non predictible pour un usage securise.
+  const token = uuidv4();
+  const tokenHash = hashToken(token);
+  const expiresAt = new Date(Date.now() + RESET_TOKEN_EXPIRES_MS);
+
+  // Suppression des anciens tokens pour cet utilisateur (un seul actif a la fois).
+  const existingSnapshot = await db
+    .collection(COLLECTIONS.RESET_TOKENS)
+    .where("userId", "==", user.id)
+    .get();
+
+  const deleteBatch = db.batch();
+  existingSnapshot.docs.forEach((doc) => deleteBatch.delete(doc.ref));
+  await deleteBatch.commit();
+
+  // Stockage du nouveau token hashe avec sa date d'expiration.
+  await db.collection(COLLECTIONS.RESET_TOKENS).add({
+    userId: user.id,
+    tokenHash,
+    expiresAt,
+    createdAt: FieldValue.serverTimestamp(),
+  });
+
+  // Construction du lien envoye dans l'email (le token brut, jamais le hash).
+  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+  const resetLink = `${frontendUrl}/reset-password?token=${token}`;
+
+  await sendResetPasswordEmail({ to: normalizedEmail, resetLink });
+}
+
+// Verifie le token, met a jour le mot de passe et invalide le token utilise.
+async function resetPassword({ token, newPassword }) {
+  const tokenHash = hashToken(token);
+
+  // Recherche du document correspondant au hash du token fourni.
+  const snapshot = await db
+    .collection(COLLECTIONS.RESET_TOKENS)
+    .where("tokenHash", "==", tokenHash)
+    .limit(1)
+    .get();
+
+  if (snapshot.empty) {
+    const error = new Error("Token invalide ou expiré.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const tokenDoc = snapshot.docs[0];
+  const tokenData = tokenDoc.data();
+
+  // Verification de l'expiration : expiresAt est un objet Date ou un Timestamp Firestore.
+  const expiresAt =
+    tokenData.expiresAt instanceof Date
+      ? tokenData.expiresAt
+      : tokenData.expiresAt.toDate();
+
+  if (Date.now() > expiresAt.getTime()) {
+    // Nettoyage immediat du token expire.
+    await tokenDoc.ref.delete();
+    const error = new Error("Token invalide ou expiré.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const userRef = db.collection(COLLECTIONS.USERS).doc(tokenData.userId);
+  const userDoc = await userRef.get();
+
+  if (!userDoc.exists) {
+    const error = new Error("Utilisateur introuvable.");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const hashedPassword = await bcrypt.hash(newPassword, BCRYPT_SALT_ROUNDS);
+
+  // Mise a jour du mot de passe et invalidation du refresh token existant par securite.
+  await userRef.update({
+    password: hashedPassword,
+    refreshTokenHash: FieldValue.delete(),
+    updatedAt: FieldValue.serverTimestamp(),
+  });
+
+  // Suppression du token de reinitialisation apres utilisation (usage unique).
+  await tokenDoc.ref.delete();
+}
+
 module.exports = {
   registerUser,
   emailExists,
   loginUser,
   refreshAccessToken,
   logoutUser,
+  requestPasswordReset,
+  resetPassword,
 };

@@ -33,9 +33,22 @@ const logoutValidators = [
   body("refreshToken").notEmpty().withMessage("Le refresh token est requis."),
 ];
 
+const forgotPasswordValidators = [
+  body("email").trim().isEmail().withMessage("Email invalide.").normalizeEmail(),
+];
+
+const resetPasswordValidators = [
+  body("token").notEmpty().withMessage("Le token est requis."),
+  body("newPassword")
+    .isLength({ min: 6 })
+    .withMessage("Le nouveau mot de passe doit contenir au moins 6 caracteres."),
+];
+
 module.exports = {
   registerValidators,
   loginValidators,
   refreshValidators,
   logoutValidators,
+  forgotPasswordValidators,
+  resetPasswordValidators,
 };

@@ -4,6 +4,8 @@ const {
   loginUser,
   refreshAccessToken,
   logoutUser,
+  requestPasswordReset,
+  resetPassword: resetPasswordService,
 } = require("../services/auth.service");
 
 function createValidationError(errors) {
@@ -103,4 +105,47 @@ async function logout(req, res, next) {
   }
 }
 
-module.exports = { register, login, refresh, logout };
+// Demande de reinitialisation : envoie un email avec un token valable 1h.
+// Repond toujours 200 pour ne pas reveler si l'email est enregistre ou non.
+async function forgotPassword(req, res, next) {
+  try {
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      throw createValidationError(errors);
+    }
+
+    await requestPasswordReset({ email: req.body.email });
+
+    res.status(200).json({
+      success: true,
+      message:
+        "Si un compte existe avec cet email, un lien de reinitialisation a ete envoye.",
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// Utilise le token recu par email pour remplacer le mot de passe.
+async function resetPassword(req, res, next) {
+  try {
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      throw createValidationError(errors);
+    }
+
+    const { token, newPassword } = req.body;
+    await resetPasswordService({ token, newPassword });
+
+    res.status(200).json({
+      success: true,
+      message: "Mot de passe reinitialise avec succes. Veuillez vous reconnecter.",
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+module.exports = { register, login, refresh, logout, forgotPassword, resetPassword };
