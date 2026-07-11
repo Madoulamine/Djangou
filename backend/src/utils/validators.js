@@ -44,6 +44,42 @@ const resetPasswordValidators = [
     .withMessage("Le nouveau mot de passe doit contenir au moins 6 caracteres."),
 ];
 
+const createCourseValidators = [
+  body("title").trim().notEmpty().withMessage("Le titre du cours est requis."),
+  body("targetLevels")
+    .custom((val) => {
+      let levels = val;
+      if (typeof val === "string") {
+        try { levels = JSON.parse(val); } catch { levels = [val]; }
+      }
+      if (!Array.isArray(levels) || levels.length === 0) {
+        throw new Error("Au moins un niveau (targetLevels) doit etre specifié.");
+      }
+      return true;
+    }),
+  body("isPublished")
+    .optional()
+    .isBoolean()
+    .withMessage("isPublished doit être un booléen.")
+    .customSanitizer(val => val === true || val === 'true'),
+];
+
+const updateCourseValidators = [
+  body("title").optional().trim().notEmpty().withMessage("Le titre ne peut pas être vide."),
+  body("targetLevels")
+    .optional()
+    .custom((val) => {
+      let levels = val;
+      if (typeof val === "string") {
+        try { levels = JSON.parse(val); } catch { levels = [val]; }
+      }
+      if (!Array.isArray(levels) || levels.length === 0) {
+        throw new Error("Au moins un niveau (targetLevels) doit etre specifié.");
+      }
+      return true;
+    }),
+];
+
 module.exports = {
   registerValidators,
   loginValidators,
@@ -51,4 +87,6 @@ module.exports = {
   logoutValidators,
   forgotPasswordValidators,
   resetPasswordValidators,
+  createCourseValidators,
+  updateCourseValidators,
 };

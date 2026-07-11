@@ -6,7 +6,7 @@ const morgan = require("morgan");
 const errorHandler = require("./middleware/errorHandler");
 const { singleFileUpload } = require("./config/multer");
 const authRoutes = require("./routes/auth.routes");
-
+const coursesRoutes = require("./routes/courses.routes");
 const app = express();
 
 const allowedOrigins = process.env.CLIENT_URL
@@ -88,6 +88,7 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 app.use("/api/auth", authRoutes);
+app.use("/api/courses", coursesRoutes);
 
 app.use((req, res, next) => {
   const error = new Error("Route introuvable");

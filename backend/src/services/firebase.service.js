@@ -94,7 +94,7 @@ async function documentExists(collectionName, documentId) {
 
 // Recupere une liste de documents avec filtres simples pour eviter la duplication.
 async function listDocuments(collectionName, options = {}) {
-  const { filters = [], orderBy = null, limit = 50 } = options;
+  const { filters = [], orderBy = null, limit = 50, startAfterDoc = null } = options;
 
   let query = collectionRef(collectionName);
 
@@ -107,12 +107,19 @@ async function listDocuments(collectionName, options = {}) {
     query = query.orderBy(field, direction);
   }
 
+  if (startAfterDoc) {
+    query = query.startAfter(startAfterDoc);
+  }
+
   const snapshot = await query.limit(limit).get();
 
-  return snapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  }));
+  return {
+    docs: snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })),
+    lastDoc: snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1] : null,
+  };
 }
 
 async function findOneByField(collectionName, field, value) {

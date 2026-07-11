@@ -204,7 +204,10 @@ Créer `src/middleware/errorHandler.js`. Toutes les erreurs de
 
 **Tâche : `feature/courses-crud`**
 
-    Routes `GET /api/courses`, `POST /api/courses`, `PUT /api/courses/:id`, `DELETE /api/courses/:id`. Seul un enseignant peut créer/modifier/supprimer. Upload du PDF/vidéo via Multer + Cloudinary.
+    Routes `GET /api/courses`, `POST /api/courses`, `PUT /api/courses/:id`, `DELETE /api/courses/:id`. Seul l'enseignant propriétaire du cours (ou Admin) peut modifier/supprimer. Upload du PDF/vidéo via Multer + Cloudinary.
+    - Ajout du mode Brouillon (`isPublished` booléen).
+    - Pagination pour la route GET (par lots de 100 cours) et filtrables.
+    - Compteur de consultations (`viewCount`).
 
 ```js
 // src/controllers/courses.controller.js
