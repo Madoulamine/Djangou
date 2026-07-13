@@ -155,6 +155,117 @@
         "mimeType": "application/json",
         "text": "{\n  \"token\": \"COLLER_UUID_TOKEN_DU_LIEN_EMAIL_ICI\",\n  \"newPassword\": \"nouveauSecret123\"\n}"
       }
+    },
+    {
+      "_id": "fld_courses",
+      "_type": "request_group",
+      "parentId": "wrk_djangou",
+      "name": "🟢 Module 2 - COURSES CRUD"
+    },
+    {
+      "_id": "req_courses_post",
+      "_type": "request",
+      "parentId": "fld_courses",
+      "name": "POST /api/courses (Créer)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/courses",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer TON_ACCESS_TOKEN_ICI"
+        }
+      ],
+      "body": {
+        "mimeType": "multipart/form-data",
+        "params": [
+          {
+            "name": "title",
+            "value": "Nouveau Cours de Géométrie"
+          },
+          {
+            "name": "description",
+            "value": "Un cours super intéressant."
+          },
+          {
+            "name": "targetLevels",
+            "value": "[\"COLLEGE\", \"LYCEE\"]"
+          },
+          {
+            "name": "isPublished",
+            "value": "false"
+          },
+          {
+            "name": "file",
+            "type": "file",
+            "fileName": ""
+          }
+        ]
+      }
+    },
+    {
+      "_id": "req_courses_get_all",
+      "_type": "request",
+      "parentId": "fld_courses",
+      "name": "GET /api/courses (Lister)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/courses?limit=10",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer TON_ACCESS_TOKEN_ICI"
+        }
+      ]
+    },
+    {
+      "_id": "req_courses_get_one",
+      "_type": "request",
+      "parentId": "fld_courses",
+      "name": "GET /api/courses/:id (Détails)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/courses/REMPLACE_PAR_ID_COURS",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer TON_ACCESS_TOKEN_ICI"
+        }
+      ]
+    },
+    {
+      "_id": "req_courses_put",
+      "_type": "request",
+      "parentId": "fld_courses",
+      "name": "PUT /api/courses/:id (Modifier)",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/api/courses/REMPLACE_PAR_ID_COURS",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer TON_ACCESS_TOKEN_ICI"
+        }
+      ],
+      "body": {
+        "mimeType": "multipart/form-data",
+        "params": [
+          {
+            "name": "title",
+            "value": "Titre du cours modifié"
+          }
+        ]
+      }
+    },
+    {
+      "_id": "req_courses_delete",
+      "_type": "request",
+      "parentId": "fld_courses",
+      "name": "DELETE /api/courses/:id (Supprimer)",
+      "method": "DELETE",
+      "url": "{{ _.base_url }}/api/courses/REMPLACE_PAR_ID_COURS",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer TON_ACCESS_TOKEN_ICI"
+        }
+      ]
     }
   ]
 }
