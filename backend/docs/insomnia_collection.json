@@ -266,6 +266,54 @@
           "value": "Bearer TON_ACCESS_TOKEN_ICI"
         }
       ]
+    },
+    {
+      "_id": "fld_users",
+      "_type": "request_group",
+      "parentId": "wrk_djangou",
+      "name": "🟣 Module 3 - USERS ADMIN"
+    },
+    {
+      "_id": "req_61aa13c92fe9",
+      "_type": "request",
+      "parentId": "fld_users",
+      "name": "GET /api/users (Lister)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/users?limit=10",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer TON_ACCESS_TOKEN_ICI"
+        }
+      ]
+    },
+    {
+      "_id": "req_2b60e2d171c1",
+      "_type": "request",
+      "parentId": "fld_users",
+      "name": "PUT /api/users/:id/block (Bloquer)",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/api/users/REMPLACE_PAR_ID_USER/block",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer TON_ACCESS_TOKEN_ICI"
+        }
+      ]
+    },
+    {
+      "_id": "req_3ccdb732d80f",
+      "_type": "request",
+      "parentId": "fld_users",
+      "name": "DELETE /api/users/:id (Supprimer)",
+      "method": "DELETE",
+      "url": "{{ _.base_url }}/api/users/REMPLACE_PAR_ID_USER",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer TON_ACCESS_TOKEN_ICI"
+        }
+      ]
     }
   ]
 }
