@@ -8,7 +8,6 @@
  */
 const SCORING_SCALES = Object.freeze({
     PRIMAIRE: { max: 10, label: "/10" },
-    UNIVERSITE: { max: 10, label: "/10" },
     SECONDAIRE: { max: 20, label: "/20" },
 });
 

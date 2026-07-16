@@ -1,0 +1,420 @@
+{
+    "_type": "export",
+    "__export_format": 4,
+    "__export_date": "2026-07-16T22:30:00.000Z",
+    "__export_source": "djangou-backend-module2",
+    "resources": [
+        {
+            "_id": "wrk_djangou_m2",
+            "_type": "workspace",
+            "name": "Djangou API — MODULE 2 — Interactivité",
+            "description": "Collection de test pour le Module 2 : Quiz Solo (étape 10). Tester dans l'ordre : Login → Créer quiz → Lister → Détail → Modifier → Soumettre réponses → Supprimer.",
+            "scope": "collection"
+        },
+        {
+            "_id": "env_base_m2",
+            "_type": "environment",
+            "parentId": "wrk_djangou_m2",
+            "name": "Local",
+            "data": {
+                "base_url": "http://localhost:5000",
+                "access_token": "COLLER_TON_ACCESS_TOKEN_ICI_APRES_LOGIN",
+                "quiz_id": "REMPLACE_PAR_ID_QUIZ_APRES_CREATION"
+            }
+        },
+        {
+            "_id": "fld_auth_m2",
+            "_type": "request_group",
+            "parentId": "wrk_djangou_m2",
+            "name": "🔐 0 - Auth (rappel — obtenir le token)"
+        },
+        {
+            "_id": "req_login_enseignant",
+            "_type": "request",
+            "parentId": "fld_auth_m2",
+            "name": "POST /api/auth/login — ENSEIGNANT",
+            "method": "POST",
+            "url": "{{ _.base_url }}/api/auth/login",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"email\": \"prof@example.com\",\n  \"password\": \"secret123\"\n}"
+            }
+        },
+        {
+            "_id": "req_login_eleve",
+            "_type": "request",
+            "parentId": "fld_auth_m2",
+            "name": "POST /api/auth/login — ELEVE",
+            "method": "POST",
+            "url": "{{ _.base_url }}/api/auth/login",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"email\": \"eleve@example.com\",\n  \"password\": \"secret123\"\n}"
+            }
+        },
+        {
+            "_id": "fld_quiz_crud",
+            "_type": "request_group",
+            "parentId": "wrk_djangou_m2",
+            "name": "📝 1 - Quiz CRUD (ENSEIGNANT / ADMIN)"
+        },
+        {
+            "_id": "req_quiz_create_qcm",
+            "_type": "request",
+            "parentId": "fld_quiz_crud",
+            "name": "POST /api/quizzes — Créer quiz QCM (Secondaire /20)",
+            "method": "POST",
+            "url": "{{ _.base_url }}/api/quizzes",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                },
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.access_token }}"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"title\": \"Quiz Histoire - Révolution Française\",\n  \"description\": \"5 questions sur la Révolution Française\",\n  \"subject\": \"Histoire\",\n  \"level\": \"SECONDAIRE\",\n  \"timer\": 300,\n  \"isPublished\": false,\n  \"questions\": [\n    {\n      \"id\": \"q1\",\n      \"type\": \"QCM\",\n      \"question\": \"En quelle année a commencé la Révolution Française ?\",\n      \"options\": [\"1789\", \"1799\", \"1776\", \"1804\"],\n      \"answer\": \"1789\",\n      \"points\": 2\n    },\n    {\n      \"id\": \"q2\",\n      \"type\": \"QCM\",\n      \"question\": \"Qui était le roi de France au début de la Révolution ?\",\n      \"options\": [\"Louis XIV\", \"Louis XV\", \"Louis XVI\", \"Napoléon\"],\n      \"answer\": \"Louis XVI\",\n      \"points\": 2\n    },\n    {\n      \"id\": \"q3\",\n      \"type\": \"QCM\",\n      \"question\": \"Quel événement marque symboliquement le début de la Révolution ?\",\n      \"options\": [\"La prise de la Bastille\", \"L'exécution du roi\", \"La fuite à Varennes\", \"Le coup d'état de Brumaire\"],\n      \"answer\": \"La prise de la Bastille\",\n      \"points\": 2\n    },\n    {\n      \"id\": \"q4\",\n      \"type\": \"LIBRE\",\n      \"question\": \"Quel est le slogan de la Révolution Française ?\",\n      \"answer\": \"Liberté, Égalité, Fraternité\",\n      \"points\": 2\n    },\n    {\n      \"id\": \"q5\",\n      \"type\": \"QCM\",\n      \"question\": \"La Déclaration des Droits de l'Homme a été adoptée en :\",\n      \"options\": [\"1787\", \"1789\", \"1793\", \"1799\"],\n      \"answer\": \"1789\",\n      \"points\": 2\n    }\n  ]\n}"
+            }
+        },
+        {
+            "_id": "req_quiz_create_primaire",
+            "_type": "request",
+            "parentId": "fld_quiz_crud",
+            "name": "POST /api/quizzes — Créer quiz Primaire (/10)",
+            "method": "POST",
+            "url": "{{ _.base_url }}/api/quizzes",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                },
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.access_token }}"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"title\": \"Quiz Mathématiques CE2\",\n  \"description\": \"Additions et soustractions simples\",\n  \"subject\": \"Mathématiques\",\n  \"level\": \"PRIMAIRE\",\n  \"timer\": 600,\n  \"isPublished\": true,\n  \"questions\": [\n    {\n      \"id\": \"q1\",\n      \"type\": \"QCM\",\n      \"question\": \"Combien font 7 + 8 ?\",\n      \"options\": [\"13\", \"14\", \"15\", \"16\"],\n      \"answer\": \"15\",\n      \"points\": 1\n    },\n    {\n      \"id\": \"q2\",\n      \"type\": \"QCM\",\n      \"question\": \"Combien font 20 - 9 ?\",\n      \"options\": [\"9\", \"10\", \"11\", \"12\"],\n      \"answer\": \"11\",\n      \"points\": 1\n    },\n    {\n      \"id\": \"q3\",\n      \"type\": \"QCM\",\n      \"question\": \"Combien font 6 × 4 ?\",\n      \"options\": [\"20\", \"22\", \"24\", \"26\"],\n      \"answer\": \"24\",\n      \"points\": 1\n    }\n  ]\n}"
+            }
+        },
+        {
+            "_id": "req_quiz_get_all",
+            "_type": "request",
+            "parentId": "fld_quiz_crud",
+            "name": "GET /api/quizzes — Lister tous les quiz",
+            "method": "GET",
+            "url": "{{ _.base_url }}/api/quizzes?limit=10",
+            "headers": [
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.access_token }}"
+                }
+            ]
+        },
+        {
+            "_id": "req_quiz_get_filter",
+            "_type": "request",
+            "parentId": "fld_quiz_crud",
+            "name": "GET /api/quizzes — Filtrer par matière et niveau",
+            "method": "GET",
+            "url": "{{ _.base_url }}/api/quizzes?subject=Histoire&level=SECONDAIRE&limit=10",
+            "headers": [
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.access_token }}"
+                }
+            ]
+        },
+        {
+            "_id": "req_quiz_get_one",
+            "_type": "request",
+            "parentId": "fld_quiz_crud",
+            "name": "GET /api/quizzes/:id — Détail d'un quiz",
+            "method": "GET",
+            "url": "{{ _.base_url }}/api/quizzes/{{ _.quiz_id }}",
+            "headers": [
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.access_token }}"
+                }
+            ]
+        },
+        {
+            "_id": "req_quiz_put",
+            "_type": "request",
+            "parentId": "fld_quiz_crud",
+            "name": "PUT /api/quizzes/:id — Modifier (publier le quiz)",
+            "method": "PUT",
+            "url": "{{ _.base_url }}/api/quizzes/{{ _.quiz_id }}",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                },
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.access_token }}"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"isPublished\": true,\n  \"title\": \"Quiz Histoire - Révolution Française (édition 2026)\"\n}"
+            }
+        },
+        {
+            "_id": "req_quiz_put_timer",
+            "_type": "request",
+            "parentId": "fld_quiz_crud",
+            "name": "PUT /api/quizzes/:id — Modifier timer uniquement",
+            "method": "PUT",
+            "url": "{{ _.base_url }}/api/quizzes/{{ _.quiz_id }}",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                },
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.access_token }}"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"timer\": 420\n}"
+            }
+        },
+        {
+            "_id": "req_quiz_delete",
+            "_type": "request",
+            "parentId": "fld_quiz_crud",
+            "name": "DELETE /api/quizzes/:id — Supprimer un quiz",
+            "method": "DELETE",
+            "url": "{{ _.base_url }}/api/quizzes/{{ _.quiz_id }}",
+            "headers": [
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.access_token }}"
+                }
+            ]
+        },
+        {
+            "_id": "fld_quiz_submit",
+            "_type": "request_group",
+            "parentId": "wrk_djangou_m2",
+            "name": "🎯 2 - Soumission des réponses (ELEVE)"
+        },
+        {
+            "_id": "req_quiz_submit_parfait",
+            "_type": "request",
+            "parentId": "fld_quiz_submit",
+            "name": "POST /api/quizzes/:id/submit — Score parfait (toutes bonnes)",
+            "method": "POST",
+            "url": "{{ _.base_url }}/api/quizzes/{{ _.quiz_id }}/submit",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                },
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.access_token }}"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"timeSpent\": 180,\n  \"answers\": [\n    { \"questionId\": \"q1\", \"answer\": \"1789\" },\n    { \"questionId\": \"q2\", \"answer\": \"Louis XVI\" },\n    { \"questionId\": \"q3\", \"answer\": \"La prise de la Bastille\" },\n    { \"questionId\": \"q4\", \"answer\": \"Liberté, Égalité, Fraternité\" },\n    { \"questionId\": \"q5\", \"answer\": \"1789\" }\n  ]\n}"
+            }
+        },
+        {
+            "_id": "req_quiz_submit_partiel",
+            "_type": "request",
+            "parentId": "fld_quiz_submit",
+            "name": "POST /api/quizzes/:id/submit — Score partiel (3/5 bonnes)",
+            "method": "POST",
+            "url": "{{ _.base_url }}/api/quizzes/{{ _.quiz_id }}/submit",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                },
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.access_token }}"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"timeSpent\": 250,\n  \"answers\": [\n    { \"questionId\": \"q1\", \"answer\": \"1789\" },\n    { \"questionId\": \"q2\", \"answer\": \"Louis XIV\" },\n    { \"questionId\": \"q3\", \"answer\": \"La prise de la Bastille\" },\n    { \"questionId\": \"q4\", \"answer\": \"Mauvaise réponse\" },\n    { \"questionId\": \"q5\", \"answer\": \"1789\" }\n  ]\n}"
+            }
+        },
+        {
+            "_id": "req_quiz_submit_zero",
+            "_type": "request",
+            "parentId": "fld_quiz_submit",
+            "name": "POST /api/quizzes/:id/submit — Score zéro (toutes fausses)",
+            "method": "POST",
+            "url": "{{ _.base_url }}/api/quizzes/{{ _.quiz_id }}/submit",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                },
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.access_token }}"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"timeSpent\": 300,\n  \"answers\": [\n    { \"questionId\": \"q1\", \"answer\": \"1799\" },\n    { \"questionId\": \"q2\", \"answer\": \"Napoléon\" },\n    { \"questionId\": \"q3\", \"answer\": \"L'exécution du roi\" },\n    { \"questionId\": \"q4\", \"answer\": \"Mauvaise réponse\" },\n    { \"questionId\": \"q5\", \"answer\": \"1793\" }\n  ]\n}"
+            }
+        },
+        {
+            "_id": "req_quiz_submit_vide",
+            "_type": "request",
+            "parentId": "fld_quiz_submit",
+            "name": "POST /api/quizzes/:id/submit — Réponses vides (pas répondu)",
+            "method": "POST",
+            "url": "{{ _.base_url }}/api/quizzes/{{ _.quiz_id }}/submit",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                },
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.access_token }}"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"timeSpent\": 30,\n  \"answers\": []\n}"
+            }
+        },
+        {
+            "_id": "fld_quiz_erreurs",
+            "_type": "request_group",
+            "parentId": "wrk_djangou_m2",
+            "name": "❌ 3 - Tests d'erreur (sécurité & validation)"
+        },
+        {
+            "_id": "req_quiz_sans_token",
+            "_type": "request",
+            "parentId": "fld_quiz_erreurs",
+            "name": "GET /api/quizzes — Sans token (attend 401)",
+            "method": "GET",
+            "url": "{{ _.base_url }}/api/quizzes"
+        },
+        {
+            "_id": "req_quiz_mauvais_role",
+            "_type": "request",
+            "parentId": "fld_quiz_erreurs",
+            "name": "POST /api/quizzes — Mauvais rôle ELEVE (attend 403)",
+            "method": "POST",
+            "url": "{{ _.base_url }}/api/quizzes",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                },
+                {
+                    "name": "Authorization",
+                    "value": "Bearer TOKEN_ELEVE_ICI"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"title\": \"Quiz frauduleux\",\n  \"questions\": [{ \"id\": \"q1\", \"question\": \"Test ?\", \"answer\": \"oui\", \"type\": \"QCM\", \"points\": 1 }]\n}"
+            }
+        },
+        {
+            "_id": "req_quiz_sans_questions",
+            "_type": "request",
+            "parentId": "fld_quiz_erreurs",
+            "name": "POST /api/quizzes — Sans questions (attend 400)",
+            "method": "POST",
+            "url": "{{ _.base_url }}/api/quizzes",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                },
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.access_token }}"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"title\": \"Quiz sans questions\",\n  \"questions\": []\n}"
+            }
+        },
+        {
+            "_id": "req_quiz_id_inexistant",
+            "_type": "request",
+            "parentId": "fld_quiz_erreurs",
+            "name": "GET /api/quizzes/:id — ID qui n'existe pas (attend 404)",
+            "method": "GET",
+            "url": "{{ _.base_url }}/api/quizzes/id_qui_nexiste_pas_du_tout",
+            "headers": [
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.access_token }}"
+                }
+            ]
+        },
+        {
+            "_id": "req_quiz_delete_non_proprio",
+            "_type": "request",
+            "parentId": "fld_quiz_erreurs",
+            "name": "DELETE /api/quizzes/:id — Pas le propriétaire (attend 403)",
+            "method": "DELETE",
+            "url": "{{ _.base_url }}/api/quizzes/{{ _.quiz_id }}",
+            "headers": [
+                {
+                    "name": "Authorization",
+                    "value": "Bearer TOKEN_AUTRE_ENSEIGNANT_ICI"
+                }
+            ]
+        },
+        {
+            "_id": "req_quiz_niveau_invalide",
+            "_type": "request",
+            "parentId": "fld_quiz_erreurs",
+            "name": "POST /api/quizzes — Niveau invalide (attend 400)",
+            "method": "POST",
+            "url": "{{ _.base_url }}/api/quizzes",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                },
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.access_token }}"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"title\": \"Test niveau invalide\",\n  \"level\": \"COLLEGE\",\n  \"questions\": [{ \"id\": \"q1\", \"question\": \"Test ?\", \"answer\": \"ok\", \"points\": 1 }]\n}"
+            }
+        }
+    ]
+}

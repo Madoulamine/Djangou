@@ -28,7 +28,13 @@ async function createQuiz(req, res, next) {
             throw error;
         }
 
-        const { title, description, subject, level, timer, questions, isPublished } = req.body;
+        const { title, description, subject, level, difficulty, questionTimer, questions, isPublished } = req.body;
+
+        if (difficulty === "DIFFICILE" && (!questionTimer || questionTimer < 5)) {
+            const err = new Error("Un quiz de difficulté 'DIFFICILE' doit avoir un timer par question (au moins 5 secondes).");
+            err.statusCode = 400;
+            throw err;
+        }
 
         // Valider que les questions sont bien un tableau non vide
         if (!Array.isArray(questions) || questions.length === 0) {
@@ -41,8 +47,9 @@ async function createQuiz(req, res, next) {
             title,
             description: description || "",
             subject: subject || "Non spécifié",
-            level: level || "PRIMAIRE",                     // Niveau scolaire pour le barème
-            timer: Number(timer) || 600,                    // Durée en secondes (défaut 10 min)
+            level: level || "PRIMAIRE",
+            difficulty: difficulty || "FACILE",             // FACILE | MOYEN | DIFFICILE
+            questionTimer: difficulty === "DIFFICILE" ? Number(questionTimer) : null,
             questions,                                      // Tableau de questions avec id, type, question, options, answer, points
             teacherId: req.user.id,
             teacherEmail: req.user.email,
@@ -179,14 +186,30 @@ async function updateQuiz(req, res, next) {
             throw err;
         }
 
-        const { title, description, subject, level, timer, questions, isPublished } = req.body;
+        const { title, description, subject, level, difficulty, questionTimer, questions, isPublished } = req.body;
 
         const payload = {};
         if (title !== undefined) payload.title = title;
         if (description !== undefined) payload.description = description;
         if (subject !== undefined) payload.subject = subject;
         if (level !== undefined) payload.level = level.toUpperCase();
-        if (timer !== undefined) payload.timer = Number(timer);
+        if (difficulty !== undefined) payload.difficulty = difficulty.toUpperCase();
+
+        // Validation du timer si on change la difficulté ou le timer lui-même
+        const finalDifficulty = payload.difficulty || quiz.difficulty;
+        const finalTimer = questionTimer !== undefined ? questionTimer : quiz.questionTimer;
+
+        if (finalDifficulty === "DIFFICILE") {
+            if (!finalTimer || finalTimer < 5) {
+                const err = new Error("Un quiz de difficulté 'DIFFICILE' doit avoir un timer par question (au moins 5 secondes).");
+                err.statusCode = 400;
+                throw err;
+            }
+            payload.questionTimer = Number(finalTimer);
+        } else {
+            // Pas de timer pour FACILE et MOYEN
+            payload.questionTimer = null;
+        }
         if (questions !== undefined) {
             if (!Array.isArray(questions) || questions.length === 0) {
                 const err = new Error("Un quiz doit contenir au moins une question.");

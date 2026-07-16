@@ -80,7 +80,8 @@ const updateCourseValidators = [
     }),
 ];
 
-const VALID_LEVELS = ["PRIMAIRE", "SECONDAIRE", "UNIVERSITE"];
+const VALID_LEVELS = ["PRIMAIRE", "SECONDAIRE"];
+const VALID_DIFFICULTIES = ["FACILE", "MOYEN", "DIFFICILE"];
 
 // Validators pour la création d'un quiz
 const createQuizValidators = [
@@ -100,10 +101,13 @@ const createQuizValidators = [
     .optional()
     .isIn(VALID_LEVELS)
     .withMessage(`Le niveau doit être l'un des suivants : ${VALID_LEVELS.join(", ")}.`),
-  body("timer")
+  body("difficulty")
+    .isIn(VALID_DIFFICULTIES)
+    .withMessage(`La difficulté doit être l'une des suivantes : ${VALID_DIFFICULTIES.join(", ")}.`),
+  body("questionTimer")
     .optional()
-    .isInt({ min: 30 })
-    .withMessage("Le timer doit être d'au moins 30 secondes."),
+    .isInt({ min: 5 })
+    .withMessage("Le timer par question doit être d'au moins 5 secondes."),
   body("isPublished")
     .optional()
     .isBoolean()
