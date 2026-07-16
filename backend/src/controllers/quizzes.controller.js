@@ -57,7 +57,9 @@ async function createQuiz(req, res, next) {
             playCount: 0,                                   // Nombre de fois que le quiz a été joué
         };
 
-        const created = await createDocument(COLLECTIONS.QUIZZES, newQuiz);
+        // Si le frontend PWA génère l'ID hors-ligne, on l'utilise (idempotence)
+        const quizId = req.body.id || null;
+        const created = await createDocument(COLLECTIONS.QUIZZES, newQuiz, quizId);
 
         res.status(201).json({
             success: true,
@@ -320,7 +322,9 @@ async function submitQuizAnswers(req, res, next) {
             mode: "SOLO",   // distingue du mode multijoueur (Module 2 étape 11)
         };
 
-        const saved = await createDocument(COLLECTIONS.QUIZ_RESULTS, quizResult);
+        // Accepte un ID généré par le frontend pour la reprise après déconnexion
+        const syncId = req.body.id || null;
+        const saved = await createDocument(COLLECTIONS.QUIZ_RESULTS, quizResult, syncId);
 
         res.status(201).json({
             success: true,
