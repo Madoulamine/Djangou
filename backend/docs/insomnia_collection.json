@@ -1,0 +1,319 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2026-07-03T00:00:00.000Z",
+  "__export_source": "djangou-backend",
+  "resources": [
+    {
+      "_id": "wrk_djangou",
+      "_type": "workspace",
+      "name": "Djangou API",
+      "description": "Collection des routes backend Djangou (sante + auth)",
+      "scope": "collection"
+    },
+    {
+      "_id": "env_base",
+      "_type": "environment",
+      "parentId": "wrk_djangou",
+      "name": "Local",
+      "data": {
+        "base_url": "http://localhost:5000"
+      }
+    },
+    {
+      "_id": "fld_health",
+      "_type": "request_group",
+      "parentId": "wrk_djangou",
+      "name": "Health"
+    },
+    {
+      "_id": "req_health",
+      "_type": "request",
+      "parentId": "fld_health",
+      "name": "GET /api/health",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/health"
+    },
+    {
+      "_id": "req_health_firestore",
+      "_type": "request",
+      "parentId": "fld_health",
+      "name": "GET /api/health/firestore",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/health/firestore"
+    },
+    {
+      "_id": "fld_auth",
+      "_type": "request_group",
+      "parentId": "wrk_djangou",
+      "name": "Auth"
+    },
+    {
+      "_id": "req_register",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "POST /api/auth/register",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/auth/register",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nom\": \"Diallo\",\n  \"prenom\": \"Amina\",\n  \"email\": \"amina.diallo@example.com\",\n  \"password\": \"secret123\",\n  \"role\": \"ELEVE\"\n}"
+      }
+    },
+    {
+      "_id": "req_login",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "POST /api/auth/login",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/auth/login",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"amina.diallo@example.com\",\n  \"password\": \"secret123\"\n}"
+      }
+    },
+    {
+      "_id": "req_refresh",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "POST /api/auth/refresh",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/auth/refresh",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"refreshToken\": \"COLLER_REFRESH_TOKEN_ICI\"\n}"
+      }
+    },
+    {
+      "_id": "req_logout",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "POST /api/auth/logout",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/auth/logout",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"refreshToken\": \"COLLER_REFRESH_TOKEN_ICI\"\n}"
+      }
+    },
+    {
+      "_id": "req_forgot_password",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "POST /api/auth/forgot-password",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/auth/forgot-password",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"amina.diallo@example.com\"\n}"
+      }
+    },
+    {
+      "_id": "req_reset_password",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "POST /api/auth/reset-password",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/auth/reset-password",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"token\": \"COLLER_UUID_TOKEN_DU_LIEN_EMAIL_ICI\",\n  \"newPassword\": \"nouveauSecret123\"\n}"
+      }
+    },
+    {
+      "_id": "fld_courses",
+      "_type": "request_group",
+      "parentId": "wrk_djangou",
+      "name": "🟢 Module 2 - COURSES CRUD"
+    },
+    {
+      "_id": "req_courses_post",
+      "_type": "request",
+      "parentId": "fld_courses",
+      "name": "POST /api/courses (Créer)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/courses",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer TON_ACCESS_TOKEN_ICI"
+        }
+      ],
+      "body": {
+        "mimeType": "multipart/form-data",
+        "params": [
+          {
+            "name": "title",
+            "value": "Nouveau Cours de Géométrie"
+          },
+          {
+            "name": "description",
+            "value": "Un cours super intéressant."
+          },
+          {
+            "name": "targetLevels",
+            "value": "[\"COLLEGE\", \"LYCEE\"]"
+          },
+          {
+            "name": "isPublished",
+            "value": "false"
+          },
+          {
+            "name": "file",
+            "type": "file",
+            "fileName": ""
+          }
+        ]
+      }
+    },
+    {
+      "_id": "req_courses_get_all",
+      "_type": "request",
+      "parentId": "fld_courses",
+      "name": "GET /api/courses (Lister)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/courses?limit=10",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer TON_ACCESS_TOKEN_ICI"
+        }
+      ]
+    },
+    {
+      "_id": "req_courses_get_one",
+      "_type": "request",
+      "parentId": "fld_courses",
+      "name": "GET /api/courses/:id (Détails)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/courses/REMPLACE_PAR_ID_COURS",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer TON_ACCESS_TOKEN_ICI"
+        }
+      ]
+    },
+    {
+      "_id": "req_courses_put",
+      "_type": "request",
+      "parentId": "fld_courses",
+      "name": "PUT /api/courses/:id (Modifier)",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/api/courses/REMPLACE_PAR_ID_COURS",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer TON_ACCESS_TOKEN_ICI"
+        }
+      ],
+      "body": {
+        "mimeType": "multipart/form-data",
+        "params": [
+          {
+            "name": "title",
+            "value": "Titre du cours modifié"
+          }
+        ]
+      }
+    },
+    {
+      "_id": "req_courses_delete",
+      "_type": "request",
+      "parentId": "fld_courses",
+      "name": "DELETE /api/courses/:id (Supprimer)",
+      "method": "DELETE",
+      "url": "{{ _.base_url }}/api/courses/REMPLACE_PAR_ID_COURS",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer TON_ACCESS_TOKEN_ICI"
+        }
+      ]
+    },
+    {
+      "_id": "fld_users",
+      "_type": "request_group",
+      "parentId": "wrk_djangou",
+      "name": "🟣 Module 3 - USERS ADMIN"
+    },
+    {
+      "_id": "req_61aa13c92fe9",
+      "_type": "request",
+      "parentId": "fld_users",
+      "name": "GET /api/users (Lister)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/users?limit=10",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer TON_ACCESS_TOKEN_ICI"
+        }
+      ]
+    },
+    {
+      "_id": "req_2b60e2d171c1",
+      "_type": "request",
+      "parentId": "fld_users",
+      "name": "PUT /api/users/:id/block (Bloquer)",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/api/users/REMPLACE_PAR_ID_USER/block",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer TON_ACCESS_TOKEN_ICI"
+        }
+      ]
+    },
+    {
+      "_id": "req_3ccdb732d80f",
+      "_type": "request",
+      "parentId": "fld_users",
+      "name": "DELETE /api/users/:id (Supprimer)",
+      "method": "DELETE",
+      "url": "{{ _.base_url }}/api/users/REMPLACE_PAR_ID_USER",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer TON_ACCESS_TOKEN_ICI"
+        }
+      ]
+    }
+  ]
+}
