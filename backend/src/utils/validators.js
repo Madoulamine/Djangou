@@ -128,6 +128,40 @@ const submitAnswersValidators = [
     .withMessage("timeSpent doit être un entier positif (secondes)."),
 ];
 
+// Validators pour la création d'une évaluation (Étape 12)
+const createEvaluationValidators = [
+  body("title").trim().notEmpty().withMessage("Le titre de l'évaluation est requis."),
+  body("questions")
+    .isArray({ min: 1 })
+    .withMessage("Une évaluation doit contenir au moins une question."),
+  body("questions.*.question").trim().notEmpty().withMessage("Chaque question doit avoir un énoncé."),
+  body("level")
+    .optional()
+    .isIn(["PRIMAIRE", "SECONDAIRE"])
+    .withMessage("Le niveau doit être PRIMAIRE ou SECONDAIRE."),
+  body("questionTimer")
+    .isInt({ min: 5 })
+    .withMessage("Le timer par question doit être d'au moins 5 secondes."),
+];
+
+// Validators pour la soumission des réponses d'une évaluation
+const submitEvalValidators = [
+  body("answers")
+    .isArray()
+    .withMessage("Le champ answers doit être un tableau."),
+  body("answers.*.questionId")
+    .notEmpty()
+    .withMessage("Chaque réponse doit avoir un questionId."),
+  body("timeSpent")
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage("timeSpent doit être un entier positif (secondes)."),
+  body("anticheatViolations")
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage("anticheatViolations doit être un entier positif."),
+];
+
 module.exports = {
   registerValidators,
   loginValidators,
@@ -139,4 +173,6 @@ module.exports = {
   updateCourseValidators,
   createQuizValidators,
   submitAnswersValidators,
+  createEvaluationValidators,
+  submitEvalValidators,
 };

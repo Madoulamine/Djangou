@@ -1,0 +1,317 @@
+{
+    "_type": "export",
+    "__export_format": 4,
+    "__export_date": "2026-07-20T13:30:00.000Z",
+    "__export_source": "djangou-backend-module2-step12",
+    "resources": [
+        {
+            "_id": "wrk_djangou_eval",
+            "_type": "workspace",
+            "name": "Djangou API — MODULE 2 — Évaluations Numériques (Étape 12)",
+            "description": "Tests pour les évaluations avec lien UUID sécurisé, timer par question, soumission, anti-triche et tableau de bord enseignant. Ordre : Login → Créer éval → Partager lien → Élève accède → Soumet → Enseignant consulte résultats.",
+            "scope": "collection"
+        },
+        {
+            "_id": "env_eval",
+            "_type": "environment",
+            "parentId": "wrk_djangou_eval",
+            "name": "Local",
+            "data": {
+                "base_url": "http://localhost:5000",
+                "access_token": "COLLER_TON_ACCESS_TOKEN_ICI_APRES_LOGIN",
+                "eval_id": "REMPLACE_PAR_ID_EVAL_APRES_CREATION",
+                "eval_link": "REMPLACE_PAR_LE_ACCESS_LINK_UUID"
+            }
+        },
+        {
+            "_id": "fld_auth_eval",
+            "_type": "request_group",
+            "parentId": "wrk_djangou_eval",
+            "name": "🔐 0 - Auth"
+        },
+        {
+            "_id": "req_login_prof",
+            "_type": "request",
+            "parentId": "fld_auth_eval",
+            "name": "POST /api/auth/login — ENSEIGNANT",
+            "method": "POST",
+            "url": "{{ _.base_url }}/api/auth/login",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"email\": \"prof@example.com\",\n  \"password\": \"secret123\"\n}"
+            }
+        },
+        {
+            "_id": "req_login_eleve",
+            "_type": "request",
+            "parentId": "fld_auth_eval",
+            "name": "POST /api/auth/login — ELEVE",
+            "method": "POST",
+            "url": "{{ _.base_url }}/api/auth/login",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"email\": \"eleve@example.com\",\n  \"password\": \"secret123\"\n}"
+            }
+        },
+        {
+            "_id": "fld_eval_crud",
+            "_type": "request_group",
+            "parentId": "wrk_djangou_eval",
+            "name": "📋 1 - CRUD Évaluation (ENSEIGNANT)"
+        },
+        {
+            "_id": "req_eval_create",
+            "_type": "request",
+            "parentId": "fld_eval_crud",
+            "name": "POST /api/evaluations — Créer évaluation (SECONDAIRE, 20s/question)",
+            "method": "POST",
+            "url": "{{ _.base_url }}/api/evaluations",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                },
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.access_token }}"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"title\": \"Examen de Mathématiques — Trimestre 1\",\n  \"description\": \"Évaluation de mi-parcours sur les polynômes\",\n  \"subject\": \"Mathématiques\",\n  \"level\": \"SECONDAIRE\",\n  \"questionTimer\": 20,\n  \"isPublished\": false,\n  \"startDate\": \"2026-07-21T08:00:00.000Z\",\n  \"endDate\": \"2026-07-21T10:00:00.000Z\",\n  \"questions\": [\n    {\n      \"id\": \"q1\",\n      \"type\": \"QCM\",\n      \"question\": \"Combien de racines peut avoir un polynôme de degré 2 ?\",\n      \"options\": [\"0\", \"1\", \"2\", \"Au plus 2\"],\n      \"answer\": \"Au plus 2\",\n      \"points\": 4\n    },\n    {\n      \"id\": \"q2\",\n      \"type\": \"QCM\",\n      \"question\": \"Quel est le degré du polynôme 3x³ + 2x + 1 ?\",\n      \"options\": [\"1\", \"2\", \"3\", \"4\"],\n      \"answer\": \"3\",\n      \"points\": 4\n    },\n    {\n      \"id\": \"q3\",\n      \"type\": \"LIBRE\",\n      \"question\": \"Factoriser x² - 4\",\n      \"answer\": \"(x-2)(x+2)\",\n      \"points\": 4\n    },\n    {\n      \"id\": \"q4\",\n      \"type\": \"QCM\",\n      \"question\": \"Le discriminant d'un polynôme de degré 2 determine :\",\n      \"options\": [\"Le nombre de racines\", \"La somme des racines\", \"Le produit des racines\", \"Le degré\"],\n      \"answer\": \"Le nombre de racines\",\n      \"points\": 4\n    },\n    {\n      \"id\": \"q5\",\n      \"type\": \"QCM\",\n      \"question\": \"ax² + bx + c = 0. Si Δ < 0 :\",\n      \"options\": [\"Deux racines réelles distinctes\", \"Une racine double\", \"Aucune racine réelle\", \"Infinité de solutions\"],\n      \"answer\": \"Aucune racine réelle\",\n      \"points\": 4\n    }\n  ]\n}"
+            }
+        },
+        {
+            "_id": "req_eval_publish",
+            "_type": "request",
+            "parentId": "fld_eval_crud",
+            "name": "PUT /api/evaluations/:id — Publier l'évaluation",
+            "method": "PUT",
+            "url": "{{ _.base_url }}/api/evaluations/{{ _.eval_id }}",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                },
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.access_token }}"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"isPublished\": true\n}"
+            }
+        },
+        {
+            "_id": "req_eval_list",
+            "_type": "request",
+            "parentId": "fld_eval_crud",
+            "name": "GET /api/evaluations — Mes évaluations",
+            "method": "GET",
+            "url": "{{ _.base_url }}/api/evaluations",
+            "headers": [
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.access_token }}"
+                }
+            ]
+        },
+        {
+            "_id": "req_eval_get",
+            "_type": "request",
+            "parentId": "fld_eval_crud",
+            "name": "GET /api/evaluations/:id — Détail complet (avec réponses)",
+            "method": "GET",
+            "url": "{{ _.base_url }}/api/evaluations/{{ _.eval_id }}",
+            "headers": [
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.access_token }}"
+                }
+            ]
+        },
+        {
+            "_id": "req_eval_delete",
+            "_type": "request",
+            "parentId": "fld_eval_crud",
+            "name": "DELETE /api/evaluations/:id — Supprimer",
+            "method": "DELETE",
+            "url": "{{ _.base_url }}/api/evaluations/{{ _.eval_id }}",
+            "headers": [
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.access_token }}"
+                }
+            ]
+        },
+        {
+            "_id": "fld_eval_eleve",
+            "_type": "request_group",
+            "parentId": "wrk_djangou_eval",
+            "name": "🎓 2 - Accès Élève (via lien UUID)"
+        },
+        {
+            "_id": "req_eval_join",
+            "_type": "request",
+            "parentId": "fld_eval_eleve",
+            "name": "GET /api/evaluations/join/:link — Accéder à l'éval (réponses masquées)",
+            "method": "GET",
+            "url": "{{ _.base_url }}/api/evaluations/join/{{ _.eval_link }}",
+            "headers": [
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.access_token }}"
+                }
+            ]
+        },
+        {
+            "_id": "req_eval_submit_parfait",
+            "_type": "request",
+            "parentId": "fld_eval_eleve",
+            "name": "POST /api/evaluations/join/:link/submit — Toutes bonnes (0 violations)",
+            "method": "POST",
+            "url": "{{ _.base_url }}/api/evaluations/join/{{ _.eval_link }}/submit",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                },
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.access_token }}"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"timeSpent\": 85,\n  \"anticheatViolations\": 0,\n  \"answers\": [\n    { \"questionId\": \"q1\", \"answer\": \"Au plus 2\" },\n    { \"questionId\": \"q2\", \"answer\": \"3\" },\n    { \"questionId\": \"q3\", \"answer\": \"(x-2)(x+2)\" },\n    { \"questionId\": \"q4\", \"answer\": \"Le nombre de racines\" },\n    { \"questionId\": \"q5\", \"answer\": \"Aucune racine réelle\" }\n  ]\n}"
+            }
+        },
+        {
+            "_id": "req_eval_submit_tricheur",
+            "_type": "request",
+            "parentId": "fld_eval_eleve",
+            "name": "POST submit — Tricheur (5 violations → isSuspect: true)",
+            "method": "POST",
+            "url": "{{ _.base_url }}/api/evaluations/join/{{ _.eval_link }}/submit",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                },
+                {
+                    "name": "Authorization",
+                    "value": "Bearer TOKEN_AUTRE_ELEVE_ICI"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"timeSpent\": 50,\n  \"anticheatViolations\": 5,\n  \"answers\": [\n    { \"questionId\": \"q1\", \"answer\": \"2\" },\n    { \"questionId\": \"q2\", \"answer\": \"3\" },\n    { \"questionId\": \"q3\", \"answer\": \"Mauvaise réponse\" },\n    { \"questionId\": \"q4\", \"answer\": \"La somme des racines\" },\n    { \"questionId\": \"q5\", \"answer\": \"Deux racines réelles distinctes\" }\n  ]\n}"
+            }
+        },
+        {
+            "_id": "fld_eval_resultats",
+            "_type": "request_group",
+            "parentId": "wrk_djangou_eval",
+            "name": "📊 3 - Tableau de Bord Enseignant"
+        },
+        {
+            "_id": "req_eval_results",
+            "_type": "request",
+            "parentId": "fld_eval_resultats",
+            "name": "GET /api/evaluations/:id/results — Résultats (avec détection tricheurs)",
+            "method": "GET",
+            "url": "{{ _.base_url }}/api/evaluations/{{ _.eval_id }}/results",
+            "headers": [
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.access_token }}"
+                }
+            ]
+        },
+        {
+            "_id": "fld_eval_erreurs",
+            "_type": "request_group",
+            "parentId": "wrk_djangou_eval",
+            "name": "❌ 4 - Tests d'erreur"
+        },
+        {
+            "_id": "req_eval_double_submit",
+            "_type": "request",
+            "parentId": "fld_eval_erreurs",
+            "name": "POST submit — Double soumission (attend 409)",
+            "method": "POST",
+            "url": "{{ _.base_url }}/api/evaluations/join/{{ _.eval_link }}/submit",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                },
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.access_token }}"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"timeSpent\": 10,\n  \"anticheatViolations\": 0,\n  \"answers\": []\n}"
+            }
+        },
+        {
+            "_id": "req_eval_link_invalide",
+            "_type": "request",
+            "parentId": "fld_eval_erreurs",
+            "name": "GET /join/:link — Lien invalide (attend 404)",
+            "method": "GET",
+            "url": "{{ _.base_url }}/api/evaluations/join/lien-qui-nexiste-pas-du-tout",
+            "headers": [
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.access_token }}"
+                }
+            ]
+        },
+        {
+            "_id": "req_eval_sans_token",
+            "_type": "request",
+            "parentId": "fld_eval_erreurs",
+            "name": "GET /api/evaluations — Sans token (attend 401)",
+            "method": "GET",
+            "url": "{{ _.base_url }}/api/evaluations"
+        },
+        {
+            "_id": "req_eval_mauvais_role",
+            "_type": "request",
+            "parentId": "fld_eval_erreurs",
+            "name": "POST /api/evaluations — Rôle ELEVE crée éval (attend 403)",
+            "method": "POST",
+            "url": "{{ _.base_url }}/api/evaluations",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                },
+                {
+                    "name": "Authorization",
+                    "value": "Bearer TOKEN_ELEVE_ICI"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"title\": \"Triche\",\n  \"questions\": []\n}"
+            }
+        }
+    ]
+}
