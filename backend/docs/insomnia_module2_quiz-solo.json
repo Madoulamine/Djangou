@@ -415,6 +415,65 @@
                 "mimeType": "application/json",
                 "text": "{\n  \"title\": \"Test niveau invalide\",\n  \"level\": \"COLLEGE\",\n  \"questions\": [{ \"id\": \"q1\", \"question\": \"Test ?\", \"answer\": \"ok\", \"points\": 1 }]\n}"
             }
+        },
+        {
+            "_id": "fld_quiz_multi",
+            "_type": "request_group",
+            "parentId": "wrk_djangou_m2",
+            "name": "🎮 4 - Multijoueur (Socket.IO)"
+        },
+        {
+            "_id": "req_ws_socketio",
+            "_type": "websocket_request",
+            "parentId": "fld_quiz_multi",
+            "name": "Connexion Socket.IO (Multijoueur)",
+            "url": "ws://localhost:5000/socket.io/?EIO=4&transport=websocket",
+            "headers": [
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.access_token }}"
+                }
+            ]
+        },
+        {
+            "_id": "ws_payload_create",
+            "_type": "websocket_payload",
+            "parentId": "req_ws_socketio",
+            "name": "1. Créer un défi",
+            "value": "42[\"quiz:create_challenge\", {\"quizId\":\"{{ _.quiz_id }}\"}]",
+            "mode": "application/json"
+        },
+        {
+            "_id": "ws_payload_join",
+            "_type": "websocket_payload",
+            "parentId": "req_ws_socketio",
+            "name": "2. Rejoindre un défi",
+            "value": "42[\"quiz:join_challenge\", {\"roomId\":\"CODE_A_COPIER_ICI\"}]",
+            "mode": "application/json"
+        },
+        {
+            "_id": "ws_payload_start",
+            "_type": "websocket_payload",
+            "parentId": "req_ws_socketio",
+            "name": "3. Démarrer le défi",
+            "value": "42[\"quiz:start_challenge\", {\"roomId\":\"CODE_A_COPIER_ICI\"}]",
+            "mode": "application/json"
+        },
+        {
+            "_id": "ws_payload_answer",
+            "_type": "websocket_payload",
+            "parentId": "req_ws_socketio",
+            "name": "4. Soumettre Réponse",
+            "value": "42[\"quiz:submit_answer\", {\"roomId\":\"CODE_A_COPIER_ICI\", \"answer\":\"TaRéponseIci\"}]",
+            "mode": "application/json"
+        },
+        {
+            "_id": "ws_payload_anticheat",
+            "_type": "websocket_payload",
+            "parentId": "req_ws_socketio",
+            "name": "5. Quitter écran (Anti-triche)",
+            "value": "42[\"quiz:anti_cheat_violation\", {\"roomId\":\"CODE_A_COPIER_ICI\"}]",
+            "mode": "application/json"
         }
     ]
 }
