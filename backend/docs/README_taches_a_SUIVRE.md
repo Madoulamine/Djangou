@@ -289,18 +289,18 @@ Créer `src/middleware/errorHandler.js`. Toutes les erreurs de
 
 ---
 
-### Étape 11 — Quiz multijoueur en temps réel (Bah_Bouba)
+~~### Étape 11 — Quiz multijoueur en temps réel (Bah_Bouba)~~
 
-**Tâche : `feature/quiz-multiplayer`**
+~~**Tâche : `feature/quiz-multiplayer`**~~
 
-    Créer `src/sockets/quiz.socket.js`. Gérer la création de salle, la connexion des participants, l'envoi synchronisé des questions, le classement en temps réel.
+~~    Créer `src/sockets/quiz.socket.js`. Gérer la création de salle, la connexion des participants, l'envoi synchronisé des questions, le classement en temps réel.~~
 
 ```js
 // src/sockets/quiz.socket.js
 // Gère les événements : créer salle, rejoindre salle, répondre, classement live
 ```
 
-**Dépend de** : Étape 10 mergée. Tâche complexe — réservée à Bah_Bouba.
+~~**Dépend de** : Étape 10 mergée. Tâche complexe — réservée à Bah_Bouba.~~
 
 ---
 
