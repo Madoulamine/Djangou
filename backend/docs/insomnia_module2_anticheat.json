@@ -1,0 +1,207 @@
+{
+    "_type": "export",
+    "__export_format": 4,
+    "__export_date": "2026-07-28T14:30:00.000Z",
+    "__export_source": "djangou-backend-module2-step13-anticheat",
+    "resources": [
+        {
+            "_id": "wrk_anticheat",
+            "_type": "workspace",
+            "name": "Djangou API — MODULE 2 — Anti-Triche Socket.IO (Étape 13)",
+            "description": "Tests pour valider le système anti-triche des évaluations. Les événements Socket.IO (eval:join, eval:anti_cheat_violation) doivent être simulés via wscat ou un client JS. Ces requêtes HTTP permettent de VÉRIFIER que les sauvegardes Firestore sont correctes APRÈS la simulation Socket.",
+            "scope": "collection"
+        },
+        {
+            "_id": "env_anticheat",
+            "_type": "environment",
+            "parentId": "wrk_anticheat",
+            "name": "Local",
+            "data": {
+                "base_url": "http://localhost:5000",
+                "token_prof": "COLLER_TOKEN_ENSEIGNANT_APRES_LOGIN",
+                "token_eleve": "COLLER_TOKEN_ELEVE_APRES_LOGIN",
+                "eval_id": "REMPLACE_PAR_ID_EVAL_APRES_CREATION",
+                "eval_link": "REMPLACE_PAR_LE_ACCESS_LINK_UUID"
+            }
+        },
+        {
+            "_id": "fld_anticheat_auth",
+            "_type": "request_group",
+            "parentId": "wrk_anticheat",
+            "name": "🔐 0 - Authentification (récupérer les tokens)"
+        },
+        {
+            "_id": "req_ac_login_prof",
+            "_type": "request",
+            "parentId": "fld_anticheat_auth",
+            "name": "POST /api/auth/login — ENSEIGNANT",
+            "method": "POST",
+            "url": "{{ _.base_url }}/api/auth/login",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"email\": \"prof@example.com\",\n  \"password\": \"secret123\"\n}"
+            }
+        },
+        {
+            "_id": "req_ac_login_eleve",
+            "_type": "request",
+            "parentId": "fld_anticheat_auth",
+            "name": "POST /api/auth/login — ELEVE (futur tricheur)",
+            "method": "POST",
+            "url": "{{ _.base_url }}/api/auth/login",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"email\": \"eleve@example.com\",\n  \"password\": \"secret123\"\n}"
+            }
+        },
+        {
+            "_id": "fld_anticheat_setup",
+            "_type": "request_group",
+            "parentId": "wrk_anticheat",
+            "name": "⚙️ 1 - Préparation (Créer + Publier l'évaluation)"
+        },
+        {
+            "_id": "req_ac_create_eval",
+            "_type": "request",
+            "parentId": "fld_anticheat_setup",
+            "name": "POST /api/evaluations — Créer éval SECONDAIRE (barème /20)",
+            "method": "POST",
+            "url": "{{ _.base_url }}/api/evaluations",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                },
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.token_prof }}"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"title\": \"Test Anti-Triche — Physique Terminale\",\n  \"subject\": \"Physique\",\n  \"level\": \"SECONDAIRE\",\n  \"questionTimer\": 30,\n  \"isPublished\": true,\n  \"questions\": [\n    {\n      \"id\": \"q1\",\n      \"type\": \"QCM\",\n      \"question\": \"Quelle est la vitesse de la lumière ?\",\n      \"options\": [\"300 000 km/s\", \"150 000 km/s\", \"3 000 km/s\", \"30 000 km/s\"],\n      \"answer\": \"300 000 km/s\",\n      \"points\": 5\n    },\n    {\n      \"id\": \"q2\",\n      \"type\": \"QCM\",\n      \"question\": \"E = mc². 'm' représente :\",\n      \"options\": [\"La masse\", \"La matière\", \"La montagne\", \"Le mouvement\"],\n      \"answer\": \"La masse\",\n      \"points\": 5\n    }\n  ]\n}"
+            }
+        },
+        {
+            "_id": "req_ac_get_eval",
+            "_type": "request",
+            "parentId": "fld_anticheat_setup",
+            "name": "GET /api/evaluations/:id — Vérifier l'eval + récupérer le accessLink",
+            "method": "GET",
+            "url": "{{ _.base_url }}/api/evaluations/{{ _.eval_id }}",
+            "headers": [
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.token_prof }}"
+                }
+            ]
+        },
+        {
+            "_id": "fld_anticheat_socket_note",
+            "_type": "request_group",
+            "parentId": "wrk_anticheat",
+            "name": "⚡ 2 - Simulation Socket.IO [WSCAT / client JS requis]"
+        },
+        {
+            "_id": "req_ac_wscat_guide",
+            "_type": "request",
+            "parentId": "fld_anticheat_socket_note",
+            "name": "📖 GUIDE — Simuler l'anti-triche via wscat (LIRE D'ABORD)",
+            "method": "GET",
+            "url": "http://localhost:WSCAT_NE_FAIT_PAS_DE_HTTP",
+            "description": "Insomnia ne supporte pas nativement Socket.IO. Utilise wscat ou un script Node.js.\n\n== MÉTHODE 1 : wscat ==\nnpm install -g wscat\nwscat -c \"ws://localhost:5000?token=TON_TOKEN_ELEVE\"\nPuis envoie :\n42[\"eval:join\", {\"evalId\": \"TON_EVAL_ID\"}]\n42[\"eval:anti_cheat_violation\", {\"evalId\": \"TON_EVAL_ID\"}]\n\n== MÉTHODE 2 : script Node (recommandé) ==\nVoir le fichier scripts/test-anticheat-socket.js (à créer avec le template ci-dessous)\n\nEvents attendus en retour :\n- eval:request_camera → La caméra est demandée\n- eval:disqualified → Élève exclu avec son score punitif\n- eval:teacher_alert → Le prof est alerté (vérifiable dans sa room)"
+        },
+        {
+            "_id": "fld_anticheat_verif",
+            "_type": "request_group",
+            "parentId": "wrk_anticheat",
+            "name": "✅ 3 - Vérification Firestore après simulation Socket"
+        },
+        {
+            "_id": "req_ac_results_prof",
+            "_type": "request",
+            "parentId": "fld_anticheat_verif",
+            "name": "GET /api/evaluations/:id/results — Voir le tricheur (score 01/20, isSuspect: true)",
+            "method": "GET",
+            "url": "{{ _.base_url }}/api/evaluations/{{ _.eval_id }}/results",
+            "headers": [
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.token_prof }}"
+                }
+            ],
+            "description": "RÉSULTAT ATTENDU :\n{\n  success: true,\n  suspectCount: 1,\n  data: [{\n    studentId: \"...\",\n    score: 1,\n    maxScore: 20,\n    isSuspect: true,\n    anticheatViolations: 1\n  }]\n}"
+        },
+        {
+            "_id": "req_ac_eleve_join_check",
+            "_type": "request",
+            "parentId": "fld_anticheat_verif",
+            "name": "GET /api/evaluations/join/:link — L'élève exclu ne peut plus accéder (déjà soumis)",
+            "method": "GET",
+            "url": "{{ _.base_url }}/api/evaluations/join/{{ _.eval_link }}",
+            "headers": [
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.token_eleve }}"
+                }
+            ],
+            "description": "RÉSULTAT ATTENDU : { alreadySubmitted: true, message: '...' }\nL'élève exclu via Socket voit qu'il a déjà participé."
+        },
+        {
+            "_id": "fld_anticheat_erreurs",
+            "_type": "request_group",
+            "parentId": "wrk_anticheat",
+            "name": "❌ 4 - Tests de robustesse (cas limites)"
+        },
+        {
+            "_id": "req_ac_submit_normal_after_exclusion",
+            "_type": "request",
+            "parentId": "fld_anticheat_erreurs",
+            "name": "POST submit — Élève tente de re-soumettre après exclusion (attend 409)",
+            "method": "POST",
+            "url": "{{ _.base_url }}/api/evaluations/join/{{ _.eval_link }}/submit",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                },
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.token_eleve }}"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"timeSpent\": 10,\n  \"anticheatViolations\": 0,\n  \"answers\": [{ \"questionId\": \"q1\", \"answer\": \"300 000 km/s\" }]\n}"
+            },
+            "description": "RÉSULTAT ATTENDU : HTTP 409 Conflict\nL'élève déjà exclu et enregistré par le Socket ne peut plus soumettre ses réponses."
+        },
+        {
+            "_id": "req_ac_results_mauvais_prof",
+            "_type": "request",
+            "parentId": "fld_anticheat_erreurs",
+            "name": "GET results — Autre enseignant essaie de voir les résultats (attend 403)",
+            "method": "GET",
+            "url": "{{ _.base_url }}/api/evaluations/{{ _.eval_id }}/results",
+            "headers": [
+                {
+                    "name": "Authorization",
+                    "value": "Bearer TOKEN_AUTRE_PROF_ICI"
+                }
+            ],
+            "description": "RÉSULTAT ATTENDU : HTTP 403 Forbidden\nSeul le propriétaire de l'évaluation ou l'admin peut voir les résultats."
+        }
+    ]
+}

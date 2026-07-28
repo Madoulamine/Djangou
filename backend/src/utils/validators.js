@@ -80,6 +80,88 @@ const updateCourseValidators = [
     }),
 ];
 
+const VALID_LEVELS = ["PRIMAIRE", "SECONDAIRE"];
+const VALID_DIFFICULTIES = ["FACILE", "MOYEN", "DIFFICILE"];
+
+// Validators pour la création d'un quiz
+const createQuizValidators = [
+  body("title").trim().notEmpty().withMessage("Le titre du quiz est requis."),
+  body("questions")
+    .isArray({ min: 1 })
+    .withMessage("Un quiz doit contenir au moins une question."),
+  body("questions.*.question")
+    .trim()
+    .notEmpty()
+    .withMessage("Chaque question doit avoir un énoncé."),
+  body("questions.*.type")
+    .optional()
+    .isIn(["QCM", "LIBRE"])
+    .withMessage("Le type de question doit être QCM ou LIBRE."),
+  body("level")
+    .optional()
+    .isIn(VALID_LEVELS)
+    .withMessage(`Le niveau doit être l'un des suivants : ${VALID_LEVELS.join(", ")}.`),
+  body("difficulty")
+    .isIn(VALID_DIFFICULTIES)
+    .withMessage(`La difficulté doit être l'une des suivantes : ${VALID_DIFFICULTIES.join(", ")}.`),
+  body("questionTimer")
+    .optional()
+    .isInt({ min: 5 })
+    .withMessage("Le timer par question doit être d'au moins 5 secondes."),
+  body("isPublished")
+    .optional()
+    .isBoolean()
+    .withMessage("isPublished doit être un booléen."),
+];
+
+// Validators pour la soumission des réponses d'un quiz
+const submitAnswersValidators = [
+  body("answers")
+    .isArray()
+    .withMessage("Le champ answers doit être un tableau."),
+  body("answers.*.questionId")
+    .notEmpty()
+    .withMessage("Chaque réponse doit avoir un questionId."),
+  body("timeSpent")
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage("timeSpent doit être un entier positif (secondes)."),
+];
+
+// Validators pour la création d'une évaluation (Étape 12)
+const createEvaluationValidators = [
+  body("title").trim().notEmpty().withMessage("Le titre de l'évaluation est requis."),
+  body("questions")
+    .isArray({ min: 1 })
+    .withMessage("Une évaluation doit contenir au moins une question."),
+  body("questions.*.question").trim().notEmpty().withMessage("Chaque question doit avoir un énoncé."),
+  body("level")
+    .optional()
+    .isIn(["PRIMAIRE", "SECONDAIRE"])
+    .withMessage("Le niveau doit être PRIMAIRE ou SECONDAIRE."),
+  body("questionTimer")
+    .isInt({ min: 5 })
+    .withMessage("Le timer par question doit être d'au moins 5 secondes."),
+];
+
+// Validators pour la soumission des réponses d'une évaluation
+const submitEvalValidators = [
+  body("answers")
+    .isArray()
+    .withMessage("Le champ answers doit être un tableau."),
+  body("answers.*.questionId")
+    .notEmpty()
+    .withMessage("Chaque réponse doit avoir un questionId."),
+  body("timeSpent")
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage("timeSpent doit être un entier positif (secondes)."),
+  body("anticheatViolations")
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage("anticheatViolations doit être un entier positif."),
+];
+
 module.exports = {
   registerValidators,
   loginValidators,
@@ -89,4 +171,8 @@ module.exports = {
   resetPasswordValidators,
   createCourseValidators,
   updateCourseValidators,
+  createQuizValidators,
+  submitAnswersValidators,
+  createEvaluationValidators,
+  submitEvalValidators,
 };

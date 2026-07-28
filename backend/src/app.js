@@ -8,6 +8,8 @@ const { singleFileUpload } = require("./config/multer");
 const authRoutes = require("./routes/auth.routes");
 const coursesRoutes = require("./routes/courses.routes");
 const usersRoutes = require("./routes/users.routes");
+const quizzesRoutes = require("./routes/quizzes.routes");
+const evaluationsRoutes = require("./routes/evaluations.routes");
 
 const app = express();
 
@@ -92,6 +94,8 @@ if (process.env.NODE_ENV !== "production") {
 app.use("/api/auth", authRoutes);
 app.use("/api/courses", coursesRoutes);
 app.use("/api/users", usersRoutes);
+app.use("/api/quizzes", quizzesRoutes);
+app.use("/api/evaluations", evaluationsRoutes);
 
 app.use((req, res, next) => {
   const error = new Error("Route introuvable");
