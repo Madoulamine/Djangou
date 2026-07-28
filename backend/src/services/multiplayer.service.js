@@ -58,7 +58,9 @@ async function createChallenge(user, quizId) {
         id: user.id,
         name: user.prenom + " " + user.nom,
         score: 0,
-        isDisqualified: false
+        isDisqualified: false,
+        antiCheatStrikes: 0,
+        penalizedOnQuestionIndex: -1
     });
 
     activeRooms.set(roomId, roomData);
@@ -78,7 +80,9 @@ function joinChallenge(roomId, user) {
             id: user.id,
             name: user.prenom + " " + user.nom,
             score: 0,
-            isDisqualified: false
+            isDisqualified: false,
+            antiCheatStrikes: 0,
+            penalizedOnQuestionIndex: -1
         });
     }
     return room;
@@ -114,6 +118,7 @@ function nextQuestion(io, room) {
 
     room.currentQuestionIndex++;
     room.firstAnswerRevealed = false; // Reset pour la nouvelle question
+    room.currentQuestionAnswerRank = 0; // Classement de rapidité pour la nouvelle question
 
     if (room.currentQuestionIndex >= room.questions.length) {
         // LE JEU EST TERMINÉ
@@ -171,17 +176,31 @@ function submitAnswer(io, roomId, userId, submittedAnswer) {
     const currentQuestion = room.questions[room.currentQuestionIndex];
     if (!currentQuestion) return false;
 
+    // Vérifier si le joueur est pénalisé pour cause de triche sur cette question
+    if (player.penalizedOnQuestionIndex === room.currentQuestionIndex) {
+        return { isCorrect: false, currentScore: player.score };
+    }
+
     // Evaluation
     const isCorrect = normalizeAnswer(submittedAnswer) === normalizeAnswer(currentQuestion.answer);
 
     if (isCorrect) {
-        // Le système évalue si c'est le 1er (100%) ou les suivants (50%)
-        if (!room.firstAnswerRevealed) {
-            player.score += (currentQuestion.points || 1);
-            room.firstAnswerRevealed = true; // Activer le flag : les autres auront 50%
+        room.currentQuestionAnswerRank++;
+        const rank = room.currentQuestionAnswerRank;
+
+        let earnedPoints = 0;
+        const basePoints = (currentQuestion.points || 1);
+
+        if (rank === 1) {
+            earnedPoints = basePoints; // 1er -> 100%
+        } else if (rank === 2) {
+            earnedPoints = basePoints * 0.8; // 2ème -> 80%
         } else {
-            player.score += (currentQuestion.points || 1) * 0.5;
+            earnedPoints = basePoints * 0.5; // 3ème+ -> 50%
         }
+
+        player.score += earnedPoints;
+        room.firstAnswerRevealed = true;
     }
 
     // On peut optionnellement envoyer un ACK au joueur pour lui dire qu'on a bien reçu
@@ -189,18 +208,35 @@ function submitAnswer(io, roomId, userId, submittedAnswer) {
 }
 
 /**
- * Disqualifier un joueur (Anti-triche)
+ * Avertir ou disqualifier un joueur (Anti-triche par Tolérance)
  */
 function disqualifyPlayer(io, roomId, userId) {
     const room = activeRooms.get(roomId);
     if (!room) return;
 
     const player = room.players.get(userId);
-    if (player) {
+    if (!player || player.isDisqualified) return;
+
+    player.antiCheatStrikes++;
+
+    if (player.antiCheatStrikes < 4) {
+        // Punition partielle : il perd 0 point pour la question en cours
+        player.penalizedOnQuestionIndex = room.currentQuestionIndex;
+        // Avertissement privé au tricheur
+        io.to(`user_${userId}`).emit("quiz:anti_cheat_warning", {
+            message: `Attention ! Vous avez quitté la page. Avertissement ${player.antiCheatStrikes}/3. Vous marquez 0 point pour la question en cours. À 4 avertissements, vous êtes éliminé.`
+        });
+    } else {
+        // Punition totale : Disqualifié à vie de la partie
         player.isDisqualified = true;
+        // Le joueur fige son interface, mais le Socket continue d'écouter les événements généraux (Leaderboard)
+        io.to(`user_${userId}`).emit("quiz:disqualified_totally", {
+            message: "Disqualification totale pour triche (4ème infraction). Vous restez en tant que spectateur."
+        });
+
         // Notifie toute la room qu'il a été disqualifié pour triche
         io.to(roomId).emit("quiz:anti_cheat_alert", {
-            message: `${player.name} a été disqualifié pour avoir quitté la page (anti-triche).`
+            message: `${player.name} a été éliminé pour suspicion de triche. (Trop d'avertissements)`
         });
     }
 }
