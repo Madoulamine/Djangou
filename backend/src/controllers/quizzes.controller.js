@@ -12,6 +12,7 @@ const {
 } = require("../services/firebase.service");
 const { db } = require("../config/firebase");
 const { calculateScore } = require("../services/scoring.service");
+const { checkAndAwardSoloBadge } = require("../services/badges.service");
 
 /**
  * Crée un nouveau quiz.
@@ -325,6 +326,16 @@ async function submitQuizAnswers(req, res, next) {
         // Accepte un ID généré par le frontend pour la reprise après déconnexion
         const syncId = req.body.id || null;
         const saved = await createDocument(COLLECTIONS.QUIZ_RESULTS, quizResult, syncId);
+
+        // ── Trigger badge solo (fire-and-forget) ──────────────────────────────
+        // On tente l'attribution uniquement si le quiz est parfait (0 faute).
+        // L'appel ne doit JAMAIS retarder ni planter la réponse HTTP.
+        if (result.totalCorrect === result.totalQuestions && result.totalQuestions > 0) {
+            const studentName = `${req.user.prenom || ""} ${req.user.nom || ""}`.trim();
+            checkAndAwardSoloBadge(req.user.id, studentName).catch((err) => {
+                console.error("[BADGE] Erreur trigger solo:", err.message);
+            });
+        }
 
         res.status(201).json({
             success: true,
