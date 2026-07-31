@@ -1,0 +1,309 @@
+{
+    "_type": "export",
+    "__export_format": 4,
+    "__export_date": "2026-07-31T17:00:00.000Z",
+    "__export_source": "djangou-backend-module3-messaging",
+    "resources": [
+        {
+            "_id": "wrk_djangou_m3_messaging",
+            "_type": "workspace",
+            "name": "Djangou API — MODULE 3 — Messagerie (Étape 16)",
+            "description": "Tests de la messagerie privée sécurisée. Ordre conseillé : 1) Login → 2) Créer conversation → 3) Accepter/Refuser → 4) Envoyer message (Socket) → 5) Lire historique → 6) Bloquer → 7) Signaler.",
+            "scope": "collection"
+        },
+        {
+            "_id": "env_base_m3_msg",
+            "_type": "environment",
+            "parentId": "wrk_djangou_m3_messaging",
+            "name": "Local",
+            "data": {
+                "base_url": "http://localhost:5000",
+                "token_eleve_A": "TOKEN_ELEVE_A_ICI",
+                "token_eleve_B": "TOKEN_ELEVE_B_ICI",
+                "token_enseignant": "TOKEN_ENSEIGNANT_ICI",
+                "token_admin": "TOKEN_ADMIN_ICI",
+                "eleve_a_id": "ID_ELEVE_A_DANS_FIRESTORE",
+                "eleve_b_id": "ID_ELEVE_B_DANS_FIRESTORE",
+                "enseignant_id": "ID_ENSEIGNANT_DANS_FIRESTORE",
+                "conversation_id": "ID_CONVERSATION_APRES_CREATION"
+            }
+        },
+        {
+            "_id": "fld_auth_msg",
+            "_type": "request_group",
+            "parentId": "wrk_djangou_m3_messaging",
+            "name": "🔐 0 - Auth"
+        },
+        {
+            "_id": "req_login_eleve_a",
+            "_type": "request",
+            "parentId": "fld_auth_msg",
+            "name": "POST /api/auth/login — ELEVE A",
+            "method": "POST",
+            "url": "{{ _.base_url }}/api/auth/login",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"email\": \"eleveA@example.com\",\n  \"password\": \"secret123\"\n}"
+            }
+        },
+        {
+            "_id": "req_login_eleve_b",
+            "_type": "request",
+            "parentId": "fld_auth_msg",
+            "name": "POST /api/auth/login — ELEVE B",
+            "method": "POST",
+            "url": "{{ _.base_url }}/api/auth/login",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"email\": \"eleveB@example.com\",\n  \"password\": \"secret123\"\n}"
+            }
+        },
+        {
+            "_id": "fld_conv",
+            "_type": "request_group",
+            "parentId": "wrk_djangou_m3_messaging",
+            "name": "💬 1 - Conversations"
+        },
+        {
+            "_id": "req_create_conv",
+            "_type": "request",
+            "parentId": "fld_conv",
+            "name": "POST /api/messages/conversations — Créer une conversation",
+            "method": "POST",
+            "url": "{{ _.base_url }}/api/messages/conversations",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                },
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.token_eleve_A }}"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"recipientId\": \"{{ _.enseignant_id }}\"\n}"
+            },
+            "description": "Crée une conversation PENDING avec l'enseignant. L'élève A doit être inscrit à au moins un de ses cours sinon → 403.\nRécupère l'ID de la conversation dans la réponse et place-le dans conversation_id."
+        },
+        {
+            "_id": "req_create_conv_no_context",
+            "_type": "request",
+            "parentId": "fld_conv",
+            "name": "POST /api/messages/conversations — Pas de contexte commun (attend 403)",
+            "method": "POST",
+            "url": "{{ _.base_url }}/api/messages/conversations",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                },
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.token_eleve_A }}"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"recipientId\": \"{{ _.eleve_b_id }}\"\n}"
+            },
+            "description": "Tenter de contacter un élève sans contexte commun → doit retourner 403."
+        },
+        {
+            "_id": "req_list_conv",
+            "_type": "request",
+            "parentId": "fld_conv",
+            "name": "GET /api/messages/conversations — Mes conversations",
+            "method": "GET",
+            "url": "{{ _.base_url }}/api/messages/conversations",
+            "headers": [
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.token_eleve_A }}"
+                }
+            ]
+        },
+        {
+            "_id": "req_accept_conv",
+            "_type": "request",
+            "parentId": "fld_conv",
+            "name": "PATCH /api/messages/conversations/:id/respond — Accepter (ENSEIGNANT)",
+            "method": "PATCH",
+            "url": "{{ _.base_url }}/api/messages/conversations/{{ _.conversation_id }}/respond",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                },
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.token_enseignant }}"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"decision\": \"ACTIVE\"\n}"
+            },
+            "description": "L'enseignant accepte la demande. La conversation passe de PENDING à ACTIVE."
+        },
+        {
+            "_id": "req_reject_conv",
+            "_type": "request",
+            "parentId": "fld_conv",
+            "name": "PATCH /api/messages/conversations/:id/respond — Refuser (ENSEIGNANT)",
+            "method": "PATCH",
+            "url": "{{ _.base_url }}/api/messages/conversations/{{ _.conversation_id }}/respond",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                },
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.token_enseignant }}"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"decision\": \"REJECTED\"\n}"
+            },
+            "description": "Refuser ferme définitivement la conversation. L'élève A ne peut plus la rouvrir."
+        },
+        {
+            "_id": "req_history",
+            "_type": "request",
+            "parentId": "fld_conv",
+            "name": "GET /api/messages/conversations/:id/history — Historique (30 messages)",
+            "method": "GET",
+            "url": "{{ _.base_url }}/api/messages/conversations/{{ _.conversation_id }}/history?limit=30",
+            "headers": [
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.token_eleve_A }}"
+                }
+            ]
+        },
+        {
+            "_id": "req_mark_read",
+            "_type": "request",
+            "parentId": "fld_conv",
+            "name": "PATCH /api/messages/conversations/:id/read — Marquer comme lu",
+            "method": "PATCH",
+            "url": "{{ _.base_url }}/api/messages/conversations/{{ _.conversation_id }}/read",
+            "headers": [
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.token_eleve_A }}"
+                }
+            ]
+        },
+        {
+            "_id": "fld_socket_msg",
+            "_type": "request_group",
+            "parentId": "wrk_djangou_m3_messaging",
+            "name": "⚡ 2 - Envoi temps réel (Socket.IO)"
+        },
+        {
+            "_id": "req_ws_msg",
+            "_type": "websocket_request",
+            "parentId": "fld_socket_msg",
+            "name": "Connexion Socket.IO — Messagerie",
+            "url": "ws://localhost:5000/socket.io/?EIO=4&transport=websocket",
+            "headers": [
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.token_eleve_A }}"
+                }
+            ]
+        },
+        {
+            "_id": "ws_msg_send",
+            "_type": "websocket_payload",
+            "parentId": "req_ws_msg",
+            "name": "1. Envoyer un message",
+            "value": "42[\"msg:send\", {\"conversationId\":\"{{ _.conversation_id }}\", \"text\":\"Bonjour professeur !\"}]",
+            "mode": "application/json"
+        },
+        {
+            "_id": "ws_msg_typing",
+            "_type": "websocket_payload",
+            "parentId": "req_ws_msg",
+            "name": "2. Indiquer 'en train d'écrire'",
+            "value": "42[\"msg:typing\", {\"conversationId\":\"{{ _.conversation_id }}\", \"recipientId\":\"{{ _.enseignant_id }}\"}]",
+            "mode": "application/json"
+        },
+        {
+            "_id": "ws_msg_read",
+            "_type": "websocket_payload",
+            "parentId": "req_ws_msg",
+            "name": "3. Marquer comme lu",
+            "value": "42[\"msg:mark_read\", {\"conversationId\":\"{{ _.conversation_id }}\"}]",
+            "mode": "application/json"
+        },
+        {
+            "_id": "fld_moderation",
+            "_type": "request_group",
+            "parentId": "wrk_djangou_m3_messaging",
+            "name": "🛡️ 3 - Modération"
+        },
+        {
+            "_id": "req_block",
+            "_type": "request",
+            "parentId": "fld_moderation",
+            "name": "POST /api/messages/block — Bloquer un utilisateur",
+            "method": "POST",
+            "url": "{{ _.base_url }}/api/messages/block",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                },
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.token_eleve_A }}"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"targetId\": \"{{ _.eleve_b_id }}\"\n}"
+            },
+            "description": "Ajoute l'ID cible dans blockedUsers[] de l'utilisateur connecté. Les tentatives de contact futures seront bloquées."
+        },
+        {
+            "_id": "req_report",
+            "_type": "request",
+            "parentId": "fld_moderation",
+            "name": "POST /api/messages/conversations/:id/report — Signaler",
+            "method": "POST",
+            "url": "{{ _.base_url }}/api/messages/conversations/{{ _.conversation_id }}/report",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                },
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.token_eleve_A }}"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"reason\": \"Messages inappropriés et harcèlement.\"\n}"
+            },
+            "description": "Crée un rapport dans la collection 'reports' visible par les ADMINs."
+        }
+    ]
+}

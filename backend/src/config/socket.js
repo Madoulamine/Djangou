@@ -2,6 +2,7 @@ const { Server } = require("socket.io");
 const socketAuthMiddleware = require("../middleware/socketAuthMiddleware");
 const quizSocketHandler = require("../sockets/quiz.socket");
 const evaluationSocketHandler = require("../sockets/evaluation.socket");
+const messagingSocketHandler = require("../sockets/messaging.socket");
 
 function getAllowedOrigins() {
   const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
@@ -55,6 +56,7 @@ function initializeSocket(server, app) {
     // Initialisation des modules Socket selon les fonctionnalités
     quizSocketHandler(io, socket);
     evaluationSocketHandler(io, socket);
+    messagingSocketHandler(io, socket);
 
     // Optionnel: Diffuser l'information aux autres membres (à adapter selon le besoin métier)
     // socket.broadcast.emit("userPresenceChange", { userId: user.id, online: true });
