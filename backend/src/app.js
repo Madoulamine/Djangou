@@ -12,6 +12,7 @@ const quizzesRoutes = require("./routes/quizzes.routes");
 const evaluationsRoutes = require("./routes/evaluations.routes");
 const badgesRoutes = require("./routes/badges.routes");
 const messagingRoutes = require("./routes/messaging.routes");
+const defisRoutes = require("./routes/defis.routes");
 
 const app = express();
 
@@ -100,6 +101,7 @@ app.use("/api/quizzes", quizzesRoutes);
 app.use("/api/evaluations", evaluationsRoutes);
 app.use("/api/badges", badgesRoutes);
 app.use("/api/messages", messagingRoutes);
+app.use("/api/defis", defisRoutes);
 
 app.use((req, res, next) => {
   const error = new Error("Route introuvable");

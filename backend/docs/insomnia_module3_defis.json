@@ -1,0 +1,221 @@
+{
+    "_type": "export",
+    "__export_format": 4,
+    "__export_date": "2026-07-31T20:00:00.000Z",
+    "__export_source": "djangou-backend-module3-defis",
+    "resources": [
+        {
+            "_id": "wrk_djangou_defis",
+            "_type": "workspace",
+            "name": "Djangou API — Défis 1v1 (Étape 17)",
+            "description": "Ordre : 1) Login → 2) Créer défi (A joue) → 3) Vérifier notification de B → 4) B joue (play) → 5) Vérifier résultat et notification de A → 6) Lister mes défis.",
+            "scope": "collection"
+        },
+        {
+            "_id": "env_defis",
+            "_type": "environment",
+            "parentId": "wrk_djangou_defis",
+            "name": "Local",
+            "data": {
+                "base_url": "http://localhost:5000",
+                "token_eleve_A": "TOKEN_ELEVE_A_ICI",
+                "token_eleve_B": "TOKEN_ELEVE_B_ICI",
+                "eleve_b_id": "ID_ELEVE_B_DANS_FIRESTORE",
+                "quiz_id": "ID_DU_QUIZ_DANS_FIRESTORE",
+                "defi_id": "ID_DEFI_APRES_CREATION"
+            }
+        },
+        {
+            "_id": "fld_auth_defis",
+            "_type": "request_group",
+            "parentId": "wrk_djangou_defis",
+            "name": "🔐 0 - Auth"
+        },
+        {
+            "_id": "req_login_a",
+            "_type": "request",
+            "parentId": "fld_auth_defis",
+            "name": "POST /api/auth/login — ELEVE A (Le Challenger)",
+            "method": "POST",
+            "url": "{{ _.base_url }}/api/auth/login",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"email\": \"eleveA@test.com\",\n  \"password\": \"secret123\"\n}"
+            }
+        },
+        {
+            "_id": "req_login_b",
+            "_type": "request",
+            "parentId": "fld_auth_defis",
+            "name": "POST /api/auth/login — ELEVE B (L'Adversaire)",
+            "method": "POST",
+            "url": "{{ _.base_url }}/api/auth/login",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"email\": \"eleveB@test.com\",\n  \"password\": \"secret123\"\n}"
+            }
+        },
+        {
+            "_id": "fld_defi_flow",
+            "_type": "request_group",
+            "parentId": "wrk_djangou_defis",
+            "name": "⚔️ 1 - Flux du Défi"
+        },
+        {
+            "_id": "req_create_defi",
+            "_type": "request",
+            "parentId": "fld_defi_flow",
+            "name": "POST /api/defis — Lancer le défi (ELEVE A joue et défie)",
+            "method": "POST",
+            "url": "{{ _.base_url }}/api/defis",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                },
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.token_eleve_A }}"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"challengedId\": \"{{ _.eleve_b_id }}\",\n  \"quizId\": \"{{ _.quiz_id }}\",\n  \"challengerScore\": 80,\n  \"challengerTimeMs\": 95000\n}"
+            },
+            "description": "ELEVE A joue son quiz, puis défie ELEVE B. Score A = 80/100, en 95 secondes.\nRécupère le 'defi_id' dans la réponse et update la variable d'env."
+        },
+        {
+            "_id": "req_list_defis_b",
+            "_type": "request",
+            "parentId": "fld_defi_flow",
+            "name": "GET /api/defis — Voir les défis reçus (ELEVE B)",
+            "method": "GET",
+            "url": "{{ _.base_url }}/api/defis",
+            "headers": [
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.token_eleve_B }}"
+                }
+            ],
+            "description": "B voit le défi avec status 'PENDING_OPPONENT' dans sa liste."
+        },
+        {
+            "_id": "req_play_win",
+            "_type": "request",
+            "parentId": "fld_defi_flow",
+            "name": "POST /api/defis/:id/play — ELEVE B joue et GAGNE (score > A)",
+            "method": "POST",
+            "url": "{{ _.base_url }}/api/defis/{{ _.defi_id }}/play",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                },
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.token_eleve_B }}"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"accept\": true,\n  \"challengedScore\": 90,\n  \"challengedTimeMs\": 80000\n}"
+            },
+            "description": "B accepte et a 90/100 en 80s. B gagne ! (score 90 > 80). Status → COMPLETED, winnerId = B."
+        },
+        {
+            "_id": "req_play_lose",
+            "_type": "request",
+            "parentId": "fld_defi_flow",
+            "name": "POST /api/defis/:id/play — ELEVE B joue et PERD (score < A)",
+            "method": "POST",
+            "url": "{{ _.base_url }}/api/defis/{{ _.defi_id }}/play",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                },
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.token_eleve_B }}"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"accept\": true,\n  \"challengedScore\": 70,\n  \"challengedTimeMs\": 110000\n}"
+            },
+            "description": "B a 70/100. A gagne avec 80/100."
+        },
+        {
+            "_id": "req_play_draw",
+            "_type": "request",
+            "parentId": "fld_defi_flow",
+            "name": "POST /api/defis/:id/play — EGALITE score, B gagne au chrono",
+            "method": "POST",
+            "url": "{{ _.base_url }}/api/defis/{{ _.defi_id }}/play",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                },
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.token_eleve_B }}"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"accept\": true,\n  \"challengedScore\": 80,\n  \"challengedTimeMs\": 70000\n}"
+            },
+            "description": "Score identique (80/80), mais B est plus rapide (70s < 95s). B gagne."
+        },
+        {
+            "_id": "req_reject",
+            "_type": "request",
+            "parentId": "fld_defi_flow",
+            "name": "POST /api/defis/:id/play — ELEVE B REFUSE le défi",
+            "method": "POST",
+            "url": "{{ _.base_url }}/api/defis/{{ _.defi_id }}/play",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                },
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.token_eleve_B }}"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"accept\": false\n}"
+            },
+            "description": "B refuse le défi → status = REJECTED. Score et winnerId restent null."
+        },
+        {
+            "_id": "req_list_a",
+            "_type": "request",
+            "parentId": "fld_defi_flow",
+            "name": "GET /api/defis — Historique de A (Victoires/Défaites)",
+            "method": "GET",
+            "url": "{{ _.base_url }}/api/defis",
+            "headers": [
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.token_eleve_A }}"
+                }
+            ]
+        }
+    ]
+}
