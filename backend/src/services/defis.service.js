@@ -4,6 +4,7 @@
 const { db, FieldValue } = require("../config/firebase");
 const { COLLECTIONS, createDocument, updateDocument, getDocumentById } = require("./firebase.service");
 const { sendNotification } = require("./notification.service");
+const { updateUserStats } = require("./leaderboard.service");
 
 /**
  * Calcule un score rapide pour un défi. (Temporaire, le frontend enverra souvent le score direct)
@@ -117,6 +118,13 @@ async function respondToDefi(defiId, challengedUser, accept, challengedScore = 0
     };
 
     const updatedDefi = await updateDocument(COLLECTIONS.DEFIS, defiId, updateData);
+
+    // ── Trigger Leaderboard (fire-and-forget) ──────────────────────
+    if (winnerId !== "DRAW") {
+        updateUserStats(winnerId, { defiScore: 50, defiWon: 1 }).catch((err) =>
+            console.error("[LEADERBOARD] Erreur d'incrémentation défi:", err.message)
+        );
+    }
 
     // DÉLÉGUER la notification du résultat au challenger
     const iWon = (winnerId === challengedUser.id);

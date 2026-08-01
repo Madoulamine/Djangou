@@ -13,6 +13,7 @@ const {
 const { db } = require("../config/firebase");
 const { calculateScore } = require("../services/scoring.service");
 const { checkAndAwardSoloBadge } = require("../services/badges.service");
+const { updateUserStats } = require("../services/leaderboard.service");
 
 /**
  * Crée un nouveau quiz.
@@ -336,6 +337,12 @@ async function submitQuizAnswers(req, res, next) {
                 console.error("[BADGE] Erreur trigger solo:", err.message);
             });
         }
+
+        // ── Trigger Leaderboard (fire-and-forget) ──────────────────────
+        updateUserStats(req.user.id, {
+            quizScore: result.score,
+            quizCompleted: 1
+        }).catch((err) => console.error("[LEADERBOARD] Erreur d'incrémentation:", err.message));
 
         res.status(201).json({
             success: true,
