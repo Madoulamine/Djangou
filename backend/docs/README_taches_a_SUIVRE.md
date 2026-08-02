@@ -479,158 +479,93 @@ Créer `src/middleware/errorHandler.js`. Toutes les erreurs de
 
 ---
 
-## MODULE 4 — Concours Officiels Ministériels *(après Module 3 en production)*
+## MODULE 4 — Scalabilité, Sécurité & Supervision 🚀 *(Spécialisation Djangou V1 Finale)*
 
-> Durée estimée : 5 à 8 semaines
+> Durée estimée : 3 à 4 semaines
+> *Note : L'intégration d'un portail dédié au Ministère de l'Éducation pour les concours officiels a été scindée et sera développée dans un projet distinct (Djangou V2).*
 
-### Étape 20 — Création et gestion des concours (LamineDev)
+### Étape 20 — Supervision WebRTC (LamineDev + Bah_Bouba)
 
-**Tâche : `feature/concours-crud`**
+**Tâche : `feature/webrtc-supervision`**
 
-    Routes CRUD pour créer un concours officiel (titre, matière, niveau, région, date/heure, durée). Génération automatique du numéro de candidature unique (UUID region-based). Stocker dans la collection `concours`. Accessible uniquement au rôle ADMIN.
+    Implémenter la vidéo-surveillance en direct pendant les évaluations et les quiz importants.
+    - Demander l'autorisation caméra `getUserMedia` côté Frontend.
+    - Utiliser WebRTC / Socket.IO pour streamer ou envoyer des "snapshots" (photos toutes les X secondes) vers le Dashboard enseignant.
+    - Le professeur voit une grille en temps réel de tous les élèves en train de composer.
 
 ```js
-// src/controllers/concours.controller.js
-// createConcours(), getConcoursById(), updateConcours(), deleteConcours()
-
-// src/services/concours.service.js
-// generateCandidatureNumber() : génère un numéro de candidature unique par région
+// src/sockets/supervision.socket.js
+// Gère l'échange de signaux WebRTC (offers/answers/ice-candidates) ou snapshots
 ```
 
-**Critère de validation** : un admin crée un concours régional, chaque candidat inscrit reçoit un numéro de candidature unique au format `REG-2026-XXXXX`.
+**Critère de validation** : un enseignant qui lance une évaluation voit les visages des étudiants en direct. Si un étudiant quitte l'onglet, sa bordure devient rouge.
 
 **Dépend de** : Module 3 entièrement déployé en production.
 
 ---
 
-### Étape 21 — Inscription des candidats par région (Yassine)
+### Étape 21 — Correction Massive & Traitement par Lots (Yassine)
 
-**Tâche : `feature/concours-inscription`**
+**Tâche : `feature/mass-scoring`**
 
-    Route `POST /api/concours/:id/inscription` pour inscrire un candidat à un concours par région. Vérifier que la date d'inscription est ouverte, que le candidat n'est pas déjà inscrit, et que sa région est éligible. Envoyer un email de confirmation avec le numéro de candidature.
+    Optimiser le moteur de correction (`scoring.service.js`) pour supporter des évaluations massives (des milliers d'étudiants).
+    - Mettre en place un système de traitement par Queue (ex: `bullmq` avec Redis) ou des batches Firestore (limités à 500 opérations) pour éviter les timeouts lors de la soumission de 5000 copies d'un coup.
 
 ```js
-// src/controllers/concours.controller.js
-// inscrireCandidats() : inscrit un élève et lui attribue son numéro de candidature
-
-// src/services/email.service.js
-// sendInscriptionConfirmation() : envoie l'email de confirmation avec le numéro
+// src/services/scoring.queue.js
+// processAnswersBatch(), calcule silencieusement et massivement
 ```
 
-**Critère de validation** : un candidat reçoit un email de confirmation avec son numéro de candidature. Tenter de s'inscrire deux fois renvoie une erreur claire.
+**Critère de validation** : terminer une évaluation de 1000 élèves ne bloque pas le serveur Node.js et les résultats sont disponibles en moins d'une minute de manière fiable.
 
 **Dépend de** : Étape 20 mergée.
 
 ---
 
-### Étape 22 — Passage simultané de l'épreuve en temps réel (Bah_Bouba)
+### Étape 22 — Scalabilité Horizontale Socket.IO (Bah_Bouba)
 
-**Tâche : `feature/concours-socket`**
+**Tâche : `feature/socket-redis-adapter`**
 
-    Créer `src/sockets/concours.socket.js`. Gérer les salles Socket.IO par région (ex : room `concours_kalinko_2026`). Synchroniser le démarrage de l'épreuve pour tous les candidats d'une région simultanément. Gérer le timer centralisé côté serveur (non manipulable côté client).
-
-```js
-// src/sockets/concours.socket.js
-// Gère les événements : joinConcoursRoom, startEpreuve, syncTimer, submitAnswers
-
-// src/services/concours.service.js
-// startConcoursForRegion() : déclenche l'épreuve pour tous les candidats d'une room
-```
-
-**Critère de validation** : 100 candidats d'une même région reçoivent le signal de démarrage en moins de 500ms. Le timer est identique pour tous et ne peut pas être manipulé côté client.
-
-**Dépend de** : Étape 21 mergée. Tâche critique — réservée à Bah_Bouba.
-
----
-
-### Étape 23 — Correction automatique + classement régional (Yassine)
-
-**Tâche : `feature/concours-scoring`**
-
-    À la fin du temps imparti, corriger automatiquement les réponses de tous les candidats d'une région. Calculer le classement régional. Identifier les candidats qualifiés pour le niveau national selon un seuil de score défini. Mettre à jour la collection `concours` avec les résultats.
-
-```js
-// src/services/scoring.service.js
-// calculateConcoursScore() : corrige et note chaque candidat à la fin de l'épreuve
-
-// src/services/concours.service.js
-// computeRegionalRanking() : classe les candidats et détermine les qualifiés national
-```
-
-**Critère de validation** : après la fin du concours, le classement régional est disponible en moins de 5 secondes. Les candidats qualifiés pour le national sont identifiés automatiquement.
-
-**Dépend de** : Étape 22 mergée.
-
----
-
-### Étape 24 — Système anti-triche concours (Bah_Bouba + LamineDev en review)
-
-**Tâche : `feature/concours-anti-cheat`**
-
-    Adapter `src/sockets/evaluation.socket.js` pour les concours. Détecter le changement d'onglet, la perte de focus, la tentative de copier-coller. Exclure automatiquement le candidat avec la note `01/20`, notifier l'admin en temps réel. Activation de la caméra obligatoire sur desktop, tablette et Android pendant toute la durée de l'épreuve.
-
-```js
-// src/sockets/concours.socket.js
-// Gère la détection de triche en concours : exclusion auto + alerte admin en temps réel
-```
-
-**Critère de validation** : un candidat qui change d'onglet est exclu en moins de 2 secondes avec la note `01/20`. L'admin voit l'alerte instantanément sur son dashboard.
-
-**Dépend de** : Étape 22 mergée. Tâche critique — review obligatoire de LamineDev avant merge.
-
----
-
-### Étape 25 — Scalabilité et optimisation (Bah_Bouba)
-
-**Tâche : `feature/concours-scalability`**
-
-    Optimiser l'architecture Socket.IO pour supporter des milliers de candidats simultanés. Utiliser `socket.io-redis` (adapter Redis) pour la scalabilité horizontale. Implémenter un système de queue pour la correction massive des réponses (ex : `bull` ou traitement par batch Firestore).
+    Préparer notre serveur temps réel à encaisser des milliers de connexions simultanées, utile pour les gros tournois ou évaluations de masse.
+    - Installer et configurer `@socket.io/redis-adapter` pour relier plusieurs processus Node.js s'ils tournent sur plusieurs serveurs (ou instances Render).
 
 ```js
 // src/config/socket.js
-// Configuration Redis adapter pour la scalabilité horizontale de Socket.IO
-
-// src/services/concours.service.js
-// processAnswersBatch() : traite les réponses par lots pour éviter les timeouts Firestore
+// Ajout du RedisAdapter (pub/sub)
 ```
 
-**Critère de validation** : un test de charge avec 500 connexions simultanées sur le même concours ne provoque aucune erreur ni timeout.
+**Critère de validation** : un test de charge avec 500+ connexions simultanées via Artillery ou un outil de test Socket.IO passe avec succès.
 
-**Dépend de** : Étape 23 mergée. Tâche technique avancée — réservée à Bah_Bouba.
+**Dépend de** : Étape 21 mergée. Tâche technique critique — réservée à Bah_Bouba.
 
 ---
 
-### Étape 26 — Export des résultats PDF/Excel (LamineDev)
+### Étape 23 — Export Officiel PDF/Excel (LamineDev)
 
-**Tâche : `feature/concours-export`**
+**Tâche : `feature/eval-export`**
 
-    Route `GET /api/concours/:id/export/pdf` et `GET /api/concours/:id/export/excel` pour exporter le classement complet d'un concours. Utiliser `pdfkit` pour le PDF et `exceljs` pour le fichier Excel. Accessible uniquement au rôle ADMIN.
+    Route `GET /api/evaluations/:id/export/pdf` et `GET /api/evaluations/:id/export/excel`.
+    - Permettre au professeur de télécharger le classement définitif, avec noms, scores et alertes de triche en fichier physique (utilisable comme PV).
 
 ```js
 // src/services/export.service.js
 // exportToPDF() : génère le classement en PDF officiel
 // exportToExcel() : génère le classement en fichier Excel (.xlsx)
-
-// src/controllers/concours.controller.js
-// exportConcoursResults() : route d'export selon le format demandé
 ```
 
-**Critère de validation** : un admin exporte le classement d'un concours régional en PDF et en Excel avec : numéro de candidature, nom, région, score, rang. Les fichiers s'ouvrent correctement.
+**Critère de validation** : un enseignant clique sur un bouton et reçoit un fichier Excel bien formaté avec la note de tous ses élèves.
 
-**Dépend de** : Étape 23 mergée.
+**Dépend de** : Étape 22 mergée.
 
 ---
 
-### Fin du Module 4 — Ce que nous devons avoir comme résultats
+### Fin du Module 4 (V1 COMPLETE) — Résultat Djangou ultime
 
-- Un admin peut créer et gérer des concours régionaux et nationaux.
-- Les candidats s'inscrivent par région avec un numéro de candidature unique.
-- L'épreuve démarre simultanément pour tous les candidats d'une région.
-- Le classement régional est calculé automatiquement à la fin.
-- Le système anti-triche exclut un candidat en moins de 2 secondes.
-- La plateforme supporte des milliers de candidats simultanés sans crash.
-- Les résultats sont exportables en PDF et Excel par l'admin.
-- Déployé en production sur `main`.
+- La plateforme peut gérer des universités entières simultanément sans crash.
+- La triche est traquée visuellement et automatiquement signalée.
+- Les professeurs ont une maîtrise et une visibilité parfaite sur les étudiants à distance (WebRTC).
+- Toutes les données sont exportables proprement.
+- Déployé en production sur `main`. Djangou V1 est prêt à être commercialisé massivement !
 
 ---
 
