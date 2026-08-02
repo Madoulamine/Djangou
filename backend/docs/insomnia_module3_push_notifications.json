@@ -1,0 +1,63 @@
+{
+    "_type": "export",
+    "__export_format": 4,
+    "__export_date": "2026-08-01T21:30:00.000Z",
+    "__export_source": "djangou-backend-module3-push",
+    "resources": [
+        {
+            "_id": "wrk_djangou_push",
+            "_type": "workspace",
+            "name": "Djangou API — Web Push (Étape 19)",
+            "description": "Tester la récupération de la clé publique de souscription, et l'enregistrement de l'appareil (simulé) d'un utilisateur.",
+            "scope": "collection"
+        },
+        {
+            "_id": "env_push",
+            "_type": "environment",
+            "parentId": "wrk_djangou_push",
+            "name": "Local",
+            "data": {
+                "base_url": "http://localhost:5000",
+                "token_eleve": "TON_TOKEN_ELEVE_ICI"
+            }
+        },
+        {
+            "_id": "fld_push",
+            "_type": "request_group",
+            "parentId": "wrk_djangou_push",
+            "name": "🔔 PWA Web Push"
+        },
+        {
+            "_id": "req_push_key",
+            "_type": "request",
+            "parentId": "fld_push",
+            "name": "GET /api/notifications/vapid-public-key — Récupérer clé",
+            "method": "GET",
+            "url": "{{ _.base_url }}/api/notifications/vapid-public-key",
+            "description": "Le frontend (React/ServiceWorker) appelle cette route pour chiffrer l'abonnement push avec Google ou Mozilla."
+        },
+        {
+            "_id": "req_push_sub",
+            "_type": "request",
+            "parentId": "fld_push",
+            "name": "POST /api/notifications/subscribe — Abonner un appareil",
+            "method": "POST",
+            "url": "{{ _.base_url }}/api/notifications/subscribe",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                },
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.token_eleve }}"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"subscription\": {\n    \"endpoint\": \"https://fcm.googleapis.com/fcm/send/fake-endpoint-pour-test-api\",\n    \"expirationTime\": null,\n    \"keys\": {\n      \"p256dh\": \"cle-publique-p256dh\",\n      \"auth\": \"cle-secrete-auth\"\n    }\n  }\n}"
+            },
+            "description": "Simule la réception de la souscription du ServiceWorker. Le backend l'ajoutera dans l'attribut pushSubscriptions de l'utilisateur."
+        }
+    ]
+}
