@@ -1,0 +1,84 @@
+{
+    "_type": "export",
+    "__export_format": 4,
+    "__export_date": "2026-08-02T15:00:00.000Z",
+    "__export_source": "djangou-backend-module4-step20-webrtc",
+    "resources": [
+        {
+            "_id": "wrk_webrtc_supervision",
+            "_type": "workspace",
+            "name": "Djangou API — MODULE 4 — Supervision WebRTC & Anti-Triche (Étape 20)",
+            "description": "Tests pour valider le serveur de signalisation WebRTC (Socket.IO). Parce que cette fonctionnalité repose à 100% sur des sockets (pour éviter des surcharges HTTP/API inutiles), les tests se feront via une simulation Socket ou wscat.",
+            "scope": "collection"
+        },
+        {
+            "_id": "env_webrtc",
+            "_type": "environment",
+            "parentId": "wrk_webrtc_supervision",
+            "name": "Local",
+            "data": {
+                "base_url": "http://localhost:5000",
+                "token_prof": "COLLER_TOKEN_ENSEIGNANT_ICI",
+                "token_eleve": "COLLER_TOKEN_ELEVE_ICI",
+                "eval_id": "REMPLACE_PAR_ID_EVALUATION"
+            }
+        },
+        {
+            "_id": "fld_webrtc_auth",
+            "_type": "request_group",
+            "parentId": "wrk_webrtc_supervision",
+            "name": "🔐 0 - Authentification (récupérer les tokens)"
+        },
+        {
+            "_id": "req_wrtc_login_prof",
+            "_type": "request",
+            "parentId": "fld_webrtc_auth",
+            "name": "POST /api/auth/login — ENSEIGNANT",
+            "method": "POST",
+            "url": "{{ _.base_url }}/api/auth/login",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"email\": \"prof@example.com\",\n  \"password\": \"secret123\"\n}"
+            }
+        },
+        {
+            "_id": "req_wrtc_login_eleve",
+            "_type": "request",
+            "parentId": "fld_webrtc_auth",
+            "name": "POST /api/auth/login — ELEVE (qui va se connecter à la vidéo / tricher)",
+            "method": "POST",
+            "url": "{{ _.base_url }}/api/auth/login",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"email\": \"eleve@example.com\",\n  \"password\": \"secret123\"\n}"
+            }
+        },
+        {
+            "_id": "fld_webrtc_socket_note",
+            "_type": "request_group",
+            "parentId": "wrk_webrtc_supervision",
+            "name": "⚡ 1 - Simulation Socket.IO WebRTC & Anti-triche [WSCAT requis]"
+        },
+        {
+            "_id": "req_webrtc_wscat_guide",
+            "_type": "request",
+            "parentId": "fld_webrtc_socket_note",
+            "name": "📖 GUIDE — Simuler Socket WebRTC (LIRE D'ABORD)",
+            "method": "GET",
+            "url": "http://localhost:WSCAT_NE_FAIT_PAS_DE_HTTP",
+            "description": "Insomnia HTTP ne supporte pas Socket.IO.\n\n== Tester wscat en mode ELEVE ==\nwscat -c \"ws://localhost:5000?token=TON_TOKEN_ELEVE\"\n\nEnsuite, pour rejoindre l'évaluation (cela notifie le prof que tu es prêt pour la caméra) :\n42[\"supervision:join\", {\"evaluationId\": \"eval123\"}]\n\nPour simuler une perte de focus (Changement d'onglet / Triche) :\n42[\"supervision:focus_lost\", {\"evaluationId\": \"eval123\"}]\n\nPour simuler l'envoi d'une photo faible-débit (Snapshot) :\n42[\"supervision:snapshot\", {\"evaluationId\": \"eval123\", \"imageBase64\": \"data:image/png;base64,iVBORw0KGgo...\"}]\n\n\n== Tester le WebRTC P2P (Signaling) ==\nPour envoyer une offre vidéo WebRTC SDP vers un autre utilisateur (Prof) :\n42[\"supervision:webrtc_offer\", {\"targetUserId\": \"id_du_prof\", \"sdp\": { \"type\": \"offer\", \"sdp\": \"v=0...\" }}]\nLe prof recevra automatiquement cet événement sur son propre socket-client pour afficher la console vidéo."
+        }
+    ]
+}
