@@ -13,8 +13,7 @@ const {
     listDocuments,
     findOneByField,
 } = require("../services/firebase.service");
-const { db } = require("../config/firebase");
-const { calculateScore } = require("../services/scoring.service");
+const scoringQueue = require("../services/scoring.queue");
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CRUD ENSEIGNANT / ADMIN
@@ -316,7 +315,7 @@ async function submitEvaluation(req, res, next) {
             const err = new Error("Cette évaluation n'est pas encore disponible."); err.statusCode = 403; throw err;
         }
 
-        // Bloquer la double soumission
+        // 1) Bloquer la double soumission (copie déjà corrigée et persistée)
         const alreadySubmitted = await findOneByField(
             COLLECTIONS.EVAL_RESULTS,
             "studentId",
@@ -327,45 +326,29 @@ async function submitEvaluation(req, res, next) {
             const err = new Error("Vous avez déjà soumis vos réponses pour cette évaluation."); err.statusCode = 409; throw err;
         }
 
-        // Calcul du score via le service existant (réutilisé depuis quiz-solo)
-        const result = calculateScore(evalDoc.questions || [], answers, evalDoc.level);
+        // 2) Bloquer si c'est déjà dans la file d'attente Node (Anti-Spam Massif)
+        if (scoringQueue.isStudentProcessing(evalDoc.id, req.user.id)) {
+            const err = new Error("Votre copie est en cours de traitement, veuillez patienter."); err.statusCode = 409; throw err;
+        }
 
-        // Marquer le résultat avec le nombre d'infractions anti-triche détectées
-        const evalResult = {
-            evalId: evalDoc.id,
-            evalTitle: evalDoc.title,
+        // 3) Délégué la correction et la sauvegarde au Worker (ScoringQueue) 🔥
+        scoringQueue.add({
+            evalDoc,
+            answers,
             studentId: req.user.id,
             studentEmail: req.user.email,
-            score: result.score,
-            maxScore: result.maxScore,
-            scale: result.scale,
-            totalCorrect: result.totalCorrect,
-            totalQuestions: result.totalQuestions,
             timeSpent: Number(timeSpent) || 0,
-            details: result.details,
-            // Anti-triche : nombre de fois que le frontend a signalé une violation
-            anticheatViolations: Number(anticheatViolations) || 0,
-            // Flag de suspicion de triche si violations >= 3
-            isSuspect: (Number(anticheatViolations) || 0) >= 3,
-        };
-
-        const saved = await createDocument(COLLECTIONS.EVAL_RESULTS, evalResult);
-
-        // Incrémenter le compteur de participants sur l'évaluation
-        await updateDocument(COLLECTIONS.EVALUATIONS, evalDoc.id, {
-            participantCount: (evalDoc.participantCount || 0) + 1,
+            anticheatViolations: Number(anticheatViolations) || 0
         });
 
-        res.status(201).json({
+        // 4) Répondre instantanément sans attendre Firestore (Scalabilité Mass-Scoring)
+        res.status(202).json({
             success: true,
+            message: "Votre copie a été reçue et est en cours de correction. Les résultats finaux seront disponibles très bientôt.",
             data: {
-                resultId: saved.id,
-                score: result.score,
-                maxScore: result.maxScore,
-                scale: result.scale,
-                totalCorrect: result.totalCorrect,
-                totalQuestions: result.totalQuestions,
-                isSuspect: evalResult.isSuspect,
+                resultId: "PENDING_" + Date.now(),
+                evalId: evalDoc.id,
+                status: "PENDING_CORRECTION"
             },
         });
     } catch (error) {
