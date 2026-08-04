@@ -13,8 +13,8 @@ const {
     listDocuments,
     findOneByField,
 } = require("../services/firebase.service");
-const { db } = require("../config/firebase");
-const { calculateScore } = require("../services/scoring.service");
+const scoringQueue = require("../services/scoring.queue");
+const { sendEvaluationInvite } = require("../services/email.service");
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CRUD ENSEIGNANT / ADMIN
@@ -45,6 +45,7 @@ async function createEvaluation(req, res, next) {
             startDate,
             endDate,
             isPublished,
+            invitedEmails, // Array of strings (emails vériafiables)
         } = req.body;
 
         if (!Array.isArray(questions) || questions.length === 0) {
@@ -73,6 +74,7 @@ async function createEvaluation(req, res, next) {
             startDate: startDate || null,    // Date/heure de début (optionnel)
             endDate: endDate || null,        // Date/heure de fin (optionnel)
             isPublished: isPublished === true || isPublished === "true",
+            invitedEmails: Array.isArray(invitedEmails) ? invitedEmails : [],
             teacherId: req.user.id,
             teacherEmail: req.user.email,
             participantCount: 0,             // Nombre d'élèves qui ont soumis leurs réponses
@@ -80,12 +82,21 @@ async function createEvaluation(req, res, next) {
 
         const created = await createDocument(COLLECTIONS.EVALUATIONS, newEval);
 
+        const shareLink = `${process.env.CLIENT_URL || "http://localhost:5173"}/evaluation/${accessLink}`;
+
+        // Si l'évaluation est publiée d'office et qu'il y a des invités, on envoie les emails
+        if (newEval.isPublished && newEval.invitedEmails.length > 0) {
+            for (const email of newEval.invitedEmails) {
+                // Fire and forget, pas de await pour ne pas bloquer la requête
+                sendEvaluationInvite(email, newEval.title, shareLink, newEval.startDate);
+            }
+        }
+
         res.status(201).json({
             success: true,
             data: {
                 ...created,
-                // On retourne aussi le lien complet à partager
-                shareLink: `${process.env.CLIENT_URL || "http://localhost:5173"}/evaluation/${accessLink}`,
+                shareLink,
             },
         });
     } catch (error) {
@@ -174,7 +185,7 @@ async function updateEvaluation(req, res, next) {
             const err = new Error("Action non autorisée."); err.statusCode = 403; throw err;
         }
 
-        const { title, description, subject, level, questions, questionTimer, startDate, endDate, isPublished } = req.body;
+        const { title, description, subject, level, questions, questionTimer, startDate, endDate, isPublished, invitedEmails } = req.body;
 
         const payload = {};
         if (title !== undefined) payload.title = title;
@@ -191,8 +202,23 @@ async function updateEvaluation(req, res, next) {
             }
             payload.questions = questions;
         }
+        if (invitedEmails !== undefined) {
+            payload.invitedEmails = Array.isArray(invitedEmails) ? invitedEmails : [];
+        }
 
         const updated = await updateDocument(COLLECTIONS.EVALUATIONS, req.params.id, payload);
+
+        // Si on passe à l'état publié et qu'il y a des emails
+        const willPublish = payload.isPublished === true;
+        const currentMails = payload.invitedEmails || evalDoc.invitedEmails || [];
+
+        if (willPublish && currentMails.length > 0) {
+            const shareLink = `${process.env.CLIENT_URL || "http://localhost:5173"}/evaluation/${evalDoc.accessLink}`;
+            for (const email of currentMails) {
+                sendEvaluationInvite(email, evalDoc.title, shareLink, evalDoc.startDate);
+            }
+        }
+
         res.status(200).json({ success: true, data: updated });
     } catch (error) {
         next(error);
@@ -239,6 +265,18 @@ async function getEvaluationByLink(req, res, next) {
 
         if (!evalDoc.isPublished) {
             const err = new Error("Cette évaluation n'est pas encore disponible."); err.statusCode = 403; throw err;
+        }
+
+        // VÉRIFICATION ANTI-INTRUSION : L'étudiant est-il sur la liste VIP ?
+        if (Array.isArray(evalDoc.invitedEmails) && evalDoc.invitedEmails.length > 0) {
+            const isInvited = evalDoc.invitedEmails.some(
+                (mail) => mail.toLowerCase() === req.user.email.toLowerCase()
+            );
+            if (!isInvited) {
+                const err = new Error("Accès refusé. Votre adresse e-mail n'a pas été invitée à cette évaluation.");
+                err.statusCode = 403;
+                throw err;
+            }
         }
 
         // Vérifier si l'évaluation est dans sa fenêtre de temps
@@ -316,7 +354,7 @@ async function submitEvaluation(req, res, next) {
             const err = new Error("Cette évaluation n'est pas encore disponible."); err.statusCode = 403; throw err;
         }
 
-        // Bloquer la double soumission
+        // 1) Bloquer la double soumission (copie déjà corrigée et persistée)
         const alreadySubmitted = await findOneByField(
             COLLECTIONS.EVAL_RESULTS,
             "studentId",
@@ -327,45 +365,29 @@ async function submitEvaluation(req, res, next) {
             const err = new Error("Vous avez déjà soumis vos réponses pour cette évaluation."); err.statusCode = 409; throw err;
         }
 
-        // Calcul du score via le service existant (réutilisé depuis quiz-solo)
-        const result = calculateScore(evalDoc.questions || [], answers, evalDoc.level);
+        // 2) Bloquer si c'est déjà dans la file d'attente Node (Anti-Spam Massif)
+        if (scoringQueue.isStudentProcessing(evalDoc.id, req.user.id)) {
+            const err = new Error("Votre copie est en cours de traitement, veuillez patienter."); err.statusCode = 409; throw err;
+        }
 
-        // Marquer le résultat avec le nombre d'infractions anti-triche détectées
-        const evalResult = {
-            evalId: evalDoc.id,
-            evalTitle: evalDoc.title,
+        // 3) Délégué la correction et la sauvegarde au Worker (ScoringQueue) 🔥
+        scoringQueue.add({
+            evalDoc,
+            answers,
             studentId: req.user.id,
             studentEmail: req.user.email,
-            score: result.score,
-            maxScore: result.maxScore,
-            scale: result.scale,
-            totalCorrect: result.totalCorrect,
-            totalQuestions: result.totalQuestions,
             timeSpent: Number(timeSpent) || 0,
-            details: result.details,
-            // Anti-triche : nombre de fois que le frontend a signalé une violation
-            anticheatViolations: Number(anticheatViolations) || 0,
-            // Flag de suspicion de triche si violations >= 3
-            isSuspect: (Number(anticheatViolations) || 0) >= 3,
-        };
-
-        const saved = await createDocument(COLLECTIONS.EVAL_RESULTS, evalResult);
-
-        // Incrémenter le compteur de participants sur l'évaluation
-        await updateDocument(COLLECTIONS.EVALUATIONS, evalDoc.id, {
-            participantCount: (evalDoc.participantCount || 0) + 1,
+            anticheatViolations: Number(anticheatViolations) || 0
         });
 
-        res.status(201).json({
+        // 4) Répondre instantanément sans attendre Firestore (Scalabilité Mass-Scoring)
+        res.status(202).json({
             success: true,
+            message: "Votre copie a été reçue et est en cours de correction. Les résultats finaux seront disponibles très bientôt.",
             data: {
-                resultId: saved.id,
-                score: result.score,
-                maxScore: result.maxScore,
-                scale: result.scale,
-                totalCorrect: result.totalCorrect,
-                totalQuestions: result.totalQuestions,
-                isSuspect: evalResult.isSuspect,
+                resultId: "PENDING_" + Date.now(),
+                evalId: evalDoc.id,
+                status: "PENDING_CORRECTION"
             },
         });
     } catch (error) {

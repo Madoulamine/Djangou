@@ -1,0 +1,114 @@
+{
+    "_type": "export",
+    "__export_format": 4,
+    "__export_date": "2026-08-02T15:00:00.000Z",
+    "__export_source": "djangou-backend-module4",
+    "resources": [
+        {
+            "_id": "wrk_module4",
+            "_type": "workspace",
+            "name": "Djangou API — MODULE 4 — Examens & Anti-triche (Étapes 20 et 21)",
+            "description": "Tests pour valider l'Étape 20 (WebRTC Signaling) et l'Étape 21 (Mass Scoring via Queue).",
+            "scope": "collection"
+        },
+        {
+            "_id": "env_mod4",
+            "_type": "environment",
+            "parentId": "wrk_module4",
+            "name": "Local",
+            "data": {
+                "base_url": "http://localhost:5000",
+                "token_prof": "COLLER_TOKEN_ENSEIGNANT_ICI",
+                "token_eleve": "COLLER_TOKEN_ELEVE_ICI",
+                "eval_id": "REMPLACE_PAR_ID_EVALUATION",
+                "eval_link": "REMPLACE_PAR_ACCESS_LINK_UUID"
+            }
+        },
+        {
+            "_id": "fld_mod4_auth",
+            "_type": "request_group",
+            "parentId": "wrk_module4",
+            "name": "🔐 0 - Authentification (récupérer les tokens)"
+        },
+        {
+            "_id": "req_wrtc_login_prof",
+            "_type": "request",
+            "parentId": "fld_mod4_auth",
+            "name": "POST /api/auth/login — ENSEIGNANT",
+            "method": "POST",
+            "url": "{{ _.base_url }}/api/auth/login",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"email\": \"prof@example.com\",\n  \"password\": \"secret123\"\n}"
+            }
+        },
+        {
+            "_id": "req_wrtc_login_eleve",
+            "_type": "request",
+            "parentId": "fld_mod4_auth",
+            "name": "POST /api/auth/login — ELEVE",
+            "method": "POST",
+            "url": "{{ _.base_url }}/api/auth/login",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"email\": \"eleve@example.com\",\n  \"password\": \"secret123\"\n}"
+            }
+        },
+        {
+            "_id": "fld_webrtc_socket_note",
+            "_type": "request_group",
+            "parentId": "wrk_module4",
+            "name": "⚡ 1 - Simulation Socket.IO WebRTC & Anti-triche [Étape 20]"
+        },
+        {
+            "_id": "req_webrtc_wscat_guide",
+            "_type": "request",
+            "parentId": "fld_webrtc_socket_note",
+            "name": "📖 GUIDE — Simuler Socket WebRTC (LIRE D'ABORD)",
+            "method": "GET",
+            "url": "http://localhost:WSCAT_NE_FAIT_PAS_DE_HTTP",
+            "description": "== Tester wscat en mode ELEVE ==\nwscat -c \"ws://localhost:5000?token=TON_TOKEN_ELEVE\"\n\nEnsuite, pour rejoindre l'évaluation :\n42[\"supervision:join\", {\"evaluationId\": \"eval123\"}]\n\nPour simuler une perte de focus (Changement d'onglet / Triche) :\n42[\"supervision:focus_lost\", {\"evaluationId\": \"eval123\"}]"
+        },
+        {
+            "_id": "fld_mass_scoring",
+            "_type": "request_group",
+            "parentId": "wrk_module4",
+            "name": "🚀 2 - Simulation Mass-Scoring (Correction par lots) [Étape 21]"
+        },
+        {
+            "_id": "req_submit_async",
+            "_type": "request",
+            "parentId": "fld_mass_scoring",
+            "name": "POST /api/evaluations/join/:link/submit — Soumission Mass-Scoring",
+            "method": "POST",
+            "url": "{{ _.base_url }}/api/evaluations/join/{{ _.eval_link }}/submit",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                },
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.token_eleve }}"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"timeSpent\": 120,\n  \"anticheatViolations\": 0,\n  \"answers\": [\n    { \"questionId\": \"q1\", \"answer\": \"300 000 km/s\" },\n    { \"questionId\": \"q2\", \"answer\": \"La masse\" }\n  ]\n}"
+            },
+            "description": "RÉSULTAT ATTENDU :\nHTTP 202 ACCEPTED\n\nLe serveur ne te donne plus ton score immédiat mais répond instantanément avec un \"resultId\" PENDING pour éviter que la base surcharge. Ta copie est mise en File d'Attente (Queue) locale."
+        }
+    ]
+}

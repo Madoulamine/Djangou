@@ -1,0 +1,266 @@
+{
+    "_type": "export",
+    "__export_format": 4,
+    "__export_date": "2026-07-29T17:00:00.000Z",
+    "__export_source": "djangou-backend-module3-badges",
+    "resources": [
+        {
+            "_id": "wrk_djangou_m3_badges",
+            "_type": "workspace",
+            "name": "Djangou API — MODULE 3 — Badges (Étape 14)",
+            "description": "Collection de test pour le système de badges automatiques. Tester dans l'ordre : 1) Login ELEVE → 2) Préparer les données (voir instructions) → 3) Déclencher le badge solo → 4) Lire les badges → 5) Tester les droits. Pour le badge multijoueur, utiliser le fichier insomnia_module2_quiz-solo.json (section Multijoueur).",
+            "scope": "collection"
+        },
+        {
+            "_id": "env_base_m3_badges",
+            "_type": "environment",
+            "parentId": "wrk_djangou_m3_badges",
+            "name": "Local",
+            "data": {
+                "base_url": "http://localhost:5000",
+                "access_token_eleve": "COLLER_TOKEN_ELEVE_ICI_APRES_LOGIN",
+                "access_token_admin": "COLLER_TOKEN_ADMIN_ICI_APRES_LOGIN",
+                "quiz_id": "REMPLACE_PAR_UN_ID_QUIZ_PUBLIE",
+                "eleve_id": "REMPLACE_PAR_L_ID_ELEVE_DANS_FIRESTORE"
+            }
+        },
+        {
+            "_id": "fld_auth_m3_badges",
+            "_type": "request_group",
+            "parentId": "wrk_djangou_m3_badges",
+            "name": "🔐 0 - Auth (obtenir les tokens)"
+        },
+        {
+            "_id": "req_badges_login_eleve",
+            "_type": "request",
+            "parentId": "fld_auth_m3_badges",
+            "name": "POST /api/auth/login — ELEVE",
+            "method": "POST",
+            "url": "{{ _.base_url }}/api/auth/login",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"email\": \"eleve@example.com\",\n  \"password\": \"secret123\"\n}"
+            }
+        },
+        {
+            "_id": "req_badges_login_admin",
+            "_type": "request",
+            "parentId": "fld_auth_m3_badges",
+            "name": "POST /api/auth/login — ADMIN",
+            "method": "POST",
+            "url": "{{ _.base_url }}/api/auth/login",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"secret123\"\n}"
+            }
+        },
+        {
+            "_id": "fld_badge_declenchement",
+            "_type": "request_group",
+            "parentId": "wrk_djangou_m3_badges",
+            "name": "🏆 1 - Déclenchement badge FÉLICITATIONS (solo)"
+        },
+        {
+            "_id": "req_badges_note_preparation",
+            "_type": "request",
+            "parentId": "fld_badge_declenchement",
+            "name": "⚠️ AVANT DE TESTER — Préparer Firestore",
+            "method": "GET",
+            "url": "{{ _.base_url }}/api/health",
+            "headers": [],
+            "description": "Avant de tester le badge FÉLICITATIONS, effectuer ces 2 actions manuellement dans la console Firestore (https://console.firebase.google.com) :\n\n1. Sur le document users/{eleve_id}, ajouter le champ : completedCourses = [\"id1\",\"id2\",\"id3\",\"id4\",\"id5\",\"id6\",\"id7\",\"id8\",\"id9\",\"id10\"] (10 entrées)\n\n2. Soumettre ce même quiz 4 autres fois avec score parfait (utiliser la requête ci-dessous) pour atteindre 5 quiz parfaits au total.\n\nCette requête GET /api/health ne sert qu'à afficher cette note — elle ne fait rien."
+        },
+        {
+            "_id": "req_badges_submit_parfait_1",
+            "_type": "request",
+            "parentId": "fld_badge_declenchement",
+            "name": "POST /api/quizzes/:id/submit — Score PARFAIT (déclenche badge si conditions remplies)",
+            "method": "POST",
+            "url": "{{ _.base_url }}/api/quizzes/{{ _.quiz_id }}/submit",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                },
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.access_token_eleve }}"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"timeSpent\": 120,\n  \"answers\": [\n    { \"questionId\": \"q1\", \"answer\": \"1789\" },\n    { \"questionId\": \"q2\", \"answer\": \"Louis XVI\" },\n    { \"questionId\": \"q3\", \"answer\": \"La prise de la Bastille\" },\n    { \"questionId\": \"q4\", \"answer\": \"Liberté, Égalité, Fraternité\" },\n    { \"questionId\": \"q5\", \"answer\": \"1789\" }\n  ]\n}"
+            },
+            "description": "Adapter les answers aux vraies questions du quiz dans {{ _.quiz_id }}.\nUne réponse parfaite (totalCorrect === totalQuestions) déclenche le check badge en arrière-plan.\nSi c'est le 5ème quiz parfait ET que completedCourses >= 10 → le badge FÉLICITATIONS est créé dans Firestore."
+        },
+        {
+            "_id": "req_badges_submit_partiel",
+            "_type": "request",
+            "parentId": "fld_badge_declenchement",
+            "name": "POST /api/quizzes/:id/submit — Score PARTIEL (ne déclenche PAS le badge)",
+            "method": "POST",
+            "url": "{{ _.base_url }}/api/quizzes/{{ _.quiz_id }}/submit",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                },
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.access_token_eleve }}"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"timeSpent\": 200,\n  \"answers\": [\n    { \"questionId\": \"q1\", \"answer\": \"1799\" },\n    { \"questionId\": \"q2\", \"answer\": \"Louis XVI\" },\n    { \"questionId\": \"q3\", \"answer\": \"La prise de la Bastille\" },\n    { \"questionId\": \"q4\", \"answer\": \"Mauvaise réponse\" },\n    { \"questionId\": \"q5\", \"answer\": \"1789\" }\n  ]\n}"
+            },
+            "description": "Score non parfait (au moins 1 faute) → le trigger badge solo n'est pas appelé du tout."
+        },
+        {
+            "_id": "fld_badge_lecture",
+            "_type": "request_group",
+            "parentId": "wrk_djangou_m3_badges",
+            "name": "📋 2 - Lecture des badges"
+        },
+        {
+            "_id": "req_badges_mes_badges",
+            "_type": "request",
+            "parentId": "fld_badge_lecture",
+            "name": "GET /api/badges — Mes propres badges (ELEVE connecté)",
+            "method": "GET",
+            "url": "{{ _.base_url }}/api/badges",
+            "headers": [
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.access_token_eleve }}"
+                }
+            ],
+            "description": "Retourne les badges de l'élève connecté.\nRésultat attendu après déclenchement : { success: true, count: 1, data: [{ type: 'FELICITATIONS', label: 'Félicitations !', icon: '🏆', ... }] }"
+        },
+        {
+            "_id": "req_badges_admin_consulte_eleve",
+            "_type": "request",
+            "parentId": "fld_badge_lecture",
+            "name": "GET /api/badges/:userId — ADMIN consulte badges d'un élève (attend 200)",
+            "method": "GET",
+            "url": "{{ _.base_url }}/api/badges/{{ _.eleve_id }}",
+            "headers": [
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.access_token_admin }}"
+                }
+            ],
+            "description": "Un ADMIN peut consulter les badges de n'importe quel utilisateur.\nRemplace {{ _.eleve_id }} par l'ID réel de l'élève dans Firestore."
+        },
+        {
+            "_id": "req_badges_sans_badges",
+            "_type": "request",
+            "parentId": "fld_badge_lecture",
+            "name": "GET /api/badges — Aucun badge encore gagné (attend count: 0)",
+            "method": "GET",
+            "url": "{{ _.base_url }}/api/badges",
+            "headers": [
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.access_token_eleve }}"
+                }
+            ],
+            "description": "Si les conditions ne sont pas encore remplies, la réponse doit être : { success: true, count: 0, data: [] }"
+        },
+        {
+            "_id": "fld_badge_securite",
+            "_type": "request_group",
+            "parentId": "wrk_djangou_m3_badges",
+            "name": "❌ 3 - Tests de sécurité & doublon"
+        },
+        {
+            "_id": "req_badges_sans_token",
+            "_type": "request",
+            "parentId": "fld_badge_securite",
+            "name": "GET /api/badges — Sans token (attend 401)",
+            "method": "GET",
+            "url": "{{ _.base_url }}/api/badges",
+            "description": "Aucun header Authorization → doit retourner 401 Unauthorized."
+        },
+        {
+            "_id": "req_badges_eleve_consulte_autre",
+            "_type": "request",
+            "parentId": "fld_badge_securite",
+            "name": "GET /api/badges/:userId — ELEVE consulte un autre élève (attend 403)",
+            "method": "GET",
+            "url": "{{ _.base_url }}/api/badges/{{ _.eleve_id }}",
+            "headers": [
+                {
+                    "name": "Authorization",
+                    "value": "Bearer TOKEN_AUTRE_ELEVE_ICI"
+                }
+            ],
+            "description": "Un ELEVE ne peut jamais consulter les badges d'un autre utilisateur.\nRemplace TOKEN_AUTRE_ELEVE_ICI par le token d'un autre élève (pas le propriétaire de eleve_id).\nAttendu : 403 Forbidden."
+        },
+        {
+            "_id": "req_badges_doublon",
+            "_type": "request",
+            "parentId": "fld_badge_securite",
+            "name": "POST /api/quizzes/:id/submit — Score parfait (anti-doublon — badge déjà attribué)",
+            "method": "POST",
+            "url": "{{ _.base_url }}/api/quizzes/{{ _.quiz_id }}/submit",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                },
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.access_token_eleve }}"
+                }
+            ],
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n  \"timeSpent\": 100,\n  \"answers\": [\n    { \"questionId\": \"q1\", \"answer\": \"1789\" },\n    { \"questionId\": \"q2\", \"answer\": \"Louis XVI\" },\n    { \"questionId\": \"q3\", \"answer\": \"La prise de la Bastille\" },\n    { \"questionId\": \"q4\", \"answer\": \"Liberté, Égalité, Fraternité\" },\n    { \"questionId\": \"q5\", \"answer\": \"1789\" }\n  ]\n}"
+            },
+            "description": "Soumettre un 6ème quiz parfait APRÈS que le badge FÉLICITATIONS ait déjà été attribué.\nEnsuite relancer GET /api/badges → doit toujours retourner count: 1 (pas de doublon).\nLa réponse HTTP du submit reste 201 (le badge est géré en arrière-plan, silencieusement)."
+        },
+        {
+            "_id": "fld_badge_quiz_master",
+            "_type": "request_group",
+            "parentId": "wrk_djangou_m3_badges",
+            "name": "⚡ 4 - Badge QUIZ_MASTER (multijoueur)"
+        },
+        {
+            "_id": "req_badges_quiz_master_note",
+            "_type": "request",
+            "parentId": "fld_badge_quiz_master",
+            "name": "⚠️ NOTE — Tester via Socket.IO (voir insomnia_module2_quiz-solo.json)",
+            "method": "GET",
+            "url": "{{ _.base_url }}/api/health",
+            "description": "Le badge QUIZ_MASTER est déclenché automatiquement à la fin d'une partie multijoueur via Socket.IO.\n\nProcédure :\n1. Ouvrir insomnia_module2_quiz-solo.json → section '🎮 4 - Multijoueur'\n2. Connecter 2 joueurs avec des tokens différents\n3. Les 2 joueurs répondent correctement à TOUTES les questions\n4. Attendre l'événement quiz:finished\n5. Lancer GET /api/badges pour chacun des 2 joueurs → badge QUIZ_MASTER présent\n\nSi un joueur a raté au moins 1 question → badge NON attribué même s'il est dans le top 2.\nCette requête est juste une note — elle ne fait rien."
+        },
+        {
+            "_id": "req_badges_verif_quiz_master_joueur1",
+            "_type": "request",
+            "parentId": "fld_badge_quiz_master",
+            "name": "GET /api/badges — Vérifier badge QUIZ_MASTER (joueur 1)",
+            "method": "GET",
+            "url": "{{ _.base_url }}/api/badges",
+            "headers": [
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.access_token_eleve }}"
+                }
+            ],
+            "description": "Après une partie multijoueur avec score parfait dans le top 2 → doit retourner le badge QUIZ_MASTER."
+        }
+    ]
+}

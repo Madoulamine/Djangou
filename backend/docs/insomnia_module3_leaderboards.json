@@ -1,0 +1,96 @@
+{
+    "_type": "export",
+    "__export_format": 4,
+    "__export_date": "2026-08-01T20:00:00.000Z",
+    "__export_source": "djangou-backend-module3-leaderboard",
+    "resources": [
+        {
+            "_id": "wrk_djangou_leader",
+            "_type": "workspace",
+            "name": "Djangou API — Leaderboards (Étape 18)",
+            "description": "Tester les différents classements publics (Quiz, Défis) et privés (Évaluations).",
+            "scope": "collection"
+        },
+        {
+            "_id": "env_leader",
+            "_type": "environment",
+            "parentId": "wrk_djangou_leader",
+            "name": "Local",
+            "data": {
+                "base_url": "http://localhost:5000",
+                "token_eleve": "TON_TOKEN_ELEVE",
+                "token_prof": "TON_TOKEN_PROF",
+                "eval_id": "ID_D_UNE_EVALUATION"
+            }
+        },
+        {
+            "_id": "fld_leader_public",
+            "_type": "request_group",
+            "parentId": "wrk_djangou_leader",
+            "name": "🌍 1 - Leaderboards Publics"
+        },
+        {
+            "_id": "req_lead_global",
+            "_type": "request",
+            "parentId": "fld_leader_public",
+            "name": "GET /api/leaderboard (Global)",
+            "method": "GET",
+            "url": "{{ _.base_url }}/api/leaderboard",
+            "headers": [
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.token_eleve }}"
+                }
+            ]
+        },
+        {
+            "_id": "req_lead_quiz",
+            "_type": "request",
+            "parentId": "fld_leader_public",
+            "name": "GET /api/leaderboard?filter=quiz (Top Quiz)",
+            "method": "GET",
+            "url": "{{ _.base_url }}/api/leaderboard?filter=quiz",
+            "headers": [
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.token_eleve }}"
+                }
+            ]
+        },
+        {
+            "_id": "req_lead_defi",
+            "_type": "request",
+            "parentId": "fld_leader_public",
+            "name": "GET /api/leaderboard?filter=defi (Top Défis)",
+            "method": "GET",
+            "url": "{{ _.base_url }}/api/leaderboard?filter=defi",
+            "headers": [
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.token_eleve }}"
+                }
+            ]
+        },
+        {
+            "_id": "fld_leader_private",
+            "_type": "request_group",
+            "parentId": "wrk_djangou_leader",
+            "name": "🔒 2 - Classement Évaluation (Restreint)"
+        },
+        {
+            "_id": "req_eval_rank",
+            "_type": "request",
+            "parentId": "fld_leader_private",
+            "name": "GET /api/leaderboard/evaluations/:evalId",
+            "method": "GET",
+            "url": "{{ _.base_url }}/api/leaderboard/evaluations/{{ _.eval_id }}",
+            "headers": [
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{ _.token_eleve }}"
+                }
+            ],
+            "description": "Doit réussir uniquement si cet élève (ou ce prof) fait partie de l'évaluation."
+        }
+    ]
+}

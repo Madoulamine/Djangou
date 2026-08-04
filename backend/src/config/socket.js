@@ -1,7 +1,11 @@
 const { Server } = require("socket.io");
+const { createAdapter } = require("@socket.io/redis-adapter");
+const Redis = require("ioredis");
 const socketAuthMiddleware = require("../middleware/socketAuthMiddleware");
 const quizSocketHandler = require("../sockets/quiz.socket");
 const evaluationSocketHandler = require("../sockets/evaluation.socket");
+const messagingSocketHandler = require("../sockets/messaging.socket");
+const supervisionSocketHandler = require("../sockets/supervision.socket");
 
 function getAllowedOrigins() {
   const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
@@ -26,6 +30,43 @@ function initializeSocket(server, app) {
     pingTimeout: 60000,
     pingInterval: 25000
   });
+
+  // ========== DÉBUT DE L'ADAPTEUR REDIS (SCALABILITÉ HORIZONTALE) ========== //
+  const redisUrl = process.env.REDIS_URL;
+
+  if (redisUrl) {
+    try {
+      // Configuration "Robustesse" : Reconnexion progressive, aucun crash d'application, 
+      // maxRetriesPerRequest à null permet aux requêtes de patienter la reconnexion.
+      const pubClient = new Redis(redisUrl, {
+        retryStrategy(times) {
+          return Math.min(times * 100, 20000); // Backoff max 20 sec
+        },
+        maxRetriesPerRequest: null,
+      });
+
+      const subClient = pubClient.duplicate();
+
+      // IMPORTANT : Capturer les erreurs Redis pour empêcher le crash "Unhandled Error" du backend
+      pubClient.on("error", (err) => {
+        console.error("🔴 [Redis Socket.IO] Erreur de connexion (Pub) :", err.message);
+      });
+      subClient.on("error", (err) => {
+        console.error("🔴 [Redis Socket.IO] Erreur de connexion (Sub) :", err.message);
+      });
+
+      pubClient.on("connect", () => {
+        console.log("🟢 [Redis] Socket.IO Adapter connecté à Redis ! L'application est maintenant hautement scalable.");
+      });
+
+      io.adapter(createAdapter(pubClient, subClient));
+    } catch (err) {
+      console.error("🔴 [Redis] Echec critique de configuration. L'adaptateur en mémoire classique sert de Fallback.", err.message);
+    }
+  } else {
+    console.log("🟠 Aucune variable REDIS_URL détectée. Socket.IO démarre en mode local en mémoire (Parfait pour Dev/Tests).");
+  }
+  // ========== FIN DE L'ADAPTEUR REDIS ========== //
 
   // Application du middleware de sécurité AVANT d'établir la connexion
   io.use(socketAuthMiddleware);
@@ -55,6 +96,8 @@ function initializeSocket(server, app) {
     // Initialisation des modules Socket selon les fonctionnalités
     quizSocketHandler(io, socket);
     evaluationSocketHandler(io, socket);
+    messagingSocketHandler(io, socket);
+    supervisionSocketHandler(io, socket);
 
     // Optionnel: Diffuser l'information aux autres membres (à adapter selon le besoin métier)
     // socket.broadcast.emit("userPresenceChange", { userId: user.id, online: true });

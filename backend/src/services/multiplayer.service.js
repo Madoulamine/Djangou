@@ -2,6 +2,7 @@
 // Logique métier In-Memory pour les Quiz Multijoueurs (Étape 11)
 
 const { getDocumentById, COLLECTIONS } = require("./firebase.service");
+const { checkAndAwardMultiplayerBadge } = require("./badges.service");
 
 // Base de données temporaire In-Memory pour le temps réel
 // Map<roomId, RoomData>
@@ -60,7 +61,8 @@ async function createChallenge(user, quizId) {
         score: 0,
         isDisqualified: false,
         antiCheatStrikes: 0,
-        penalizedOnQuestionIndex: -1
+        penalizedOnQuestionIndex: -1,
+        correctAnswers: 0, // Compteur de réponses correctes pour le badge Quiz Master
     });
 
     activeRooms.set(roomId, roomData);
@@ -82,7 +84,8 @@ function joinChallenge(roomId, user) {
             score: 0,
             isDisqualified: false,
             antiCheatStrikes: 0,
-            penalizedOnQuestionIndex: -1
+            penalizedOnQuestionIndex: -1,
+            correctAnswers: 0, // Compteur de réponses correctes pour le badge Quiz Master
         });
     }
     return room;
@@ -125,6 +128,21 @@ function nextQuestion(io, room) {
         room.status = "FINISHED";
         const leaderboard = getLeaderboard(room);
         io.to(room.roomId).emit("quiz:finished", { leaderboard });
+
+        // ── Trigger badge multijoueur (fire-and-forget) ────────────────
+        // Les 2 premiers du classement avec un score parfait gagnent le badge QUIZ_MASTER.
+        // On utilise slice(0, 2) car getLeaderboard() retourne déjà le tableau trié par score.
+        const totalQuestions = room.questions.length;
+        leaderboard.slice(0, 2).forEach((player) => {
+            const isPerfectScore =
+                !player.isDisqualified &&
+                player.correctAnswers === totalQuestions &&
+                totalQuestions > 0;
+
+            checkAndAwardMultiplayerBadge(player.id, player.name, isPerfectScore).catch((err) => {
+                console.error("[BADGE] Erreur trigger multijoueur:", err.message);
+            });
+        });
 
         // Nettoyer la room de la mémoire après 2 minutes (le temps qu'ils regardent les scores)
         setTimeout(() => activeRooms.delete(room.roomId), 120000);
@@ -192,14 +210,15 @@ function submitAnswer(io, roomId, userId, submittedAnswer) {
         const basePoints = (currentQuestion.points || 1);
 
         if (rank === 1) {
-            earnedPoints = basePoints; // 1er -> 100%
+            earnedPoints = basePoints; // 1er → 100%
         } else if (rank === 2) {
-            earnedPoints = basePoints * 0.8; // 2ème -> 80%
+            earnedPoints = basePoints * 0.8; // 2ème → 80%
         } else {
-            earnedPoints = basePoints * 0.5; // 3ème+ -> 50%
+            earnedPoints = basePoints * 0.5; // 3ème+ → 50%
         }
 
         player.score += earnedPoints;
+        player.correctAnswers++; // Incrémenté ici pour le suivi du score parfait (badge Quiz Master)
         room.firstAnswerRevealed = true;
     }
 

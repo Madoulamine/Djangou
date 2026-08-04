@@ -10,6 +10,12 @@ const coursesRoutes = require("./routes/courses.routes");
 const usersRoutes = require("./routes/users.routes");
 const quizzesRoutes = require("./routes/quizzes.routes");
 const evaluationsRoutes = require("./routes/evaluations.routes");
+const badgesRoutes = require("./routes/badges.routes");
+const messagingRoutes = require("./routes/messaging.routes");
+const defisRoutes = require("./routes/defis.routes");
+const leaderboardRoutes = require("./routes/leaderboard.routes");
+const notificationsRoutes = require("./routes/notifications.routes");
+const exportRoutes = require("./routes/export.routes");
 
 const app = express();
 
@@ -96,6 +102,12 @@ app.use("/api/courses", coursesRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/quizzes", quizzesRoutes);
 app.use("/api/evaluations", evaluationsRoutes);
+app.use("/api/badges", badgesRoutes);
+app.use("/api/messages", messagingRoutes);
+app.use("/api/defis", defisRoutes);
+app.use("/api/leaderboard", leaderboardRoutes);
+app.use("/api/notifications", notificationsRoutes);
+app.use("/api/export", exportRoutes);
 
 app.use((req, res, next) => {
   const error = new Error("Route introuvable");

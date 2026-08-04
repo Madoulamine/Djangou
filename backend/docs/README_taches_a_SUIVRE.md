@@ -343,6 +343,232 @@ Créer `src/middleware/errorHandler.js`. Toutes les erreurs de
 
 ---
 
+## MODULE 3 — Engagement *(après Module 2 en production)*
+
+> Durée estimée : 3 à 5 semaines
+
+### Étape 14 — Système de badges automatiques (LamineDev)
+
+**Tâche : `feature/badges-system`**
+
+    Créer la collection `badges` dans Firestore. Implémenter les triggers backend qui attribuent automatiquement un badge à un élève selon des critères définis (ex : 5 quiz réussis, score parfait, 10 cours terminés). Route `GET /api/badges/:userId` pour récupérer les badges d'un utilisateur.
+
+```js
+// src/services/badges.service.js
+// checkAndAwardBadges() : vérifie les critères et attribue les badges mérités
+
+// src/controllers/badges.controller.js
+// getUserBadges() : retourne la liste des badges d'un utilisateur
+```
+
+**Critère de validation** : après avoir réussi 5 quiz, un badge "Quiz Master" apparaît automatiquement dans le profil de l'élève. Les badges ne sont attribués qu'une seule fois.
+
+**Dépend de** : Module 2 entièrement déployé en production.
+
+---
+
+### Étape 15 — Génération de certificats PDF (Yassine)
+
+**Tâche : `feature/certificates-pdf`**
+
+    Utiliser `pdfkit` ou `puppeteer` pour générer un certificat PDF personnalisé (nom de l'élève, matière, score, date) après la validation d'un cours ou d'une évaluation. Stocker le PDF sur Cloudinary et enregistrer le lien dans la collection `certifications`.
+
+```js
+// src/services/certificate.service.js
+// generateCertificate() : génère le PDF et l'upload sur Cloudinary
+
+// src/controllers/certificates.controller.js
+// getCertificate() : retourne le lien du certificat d'un utilisateur
+```
+
+**Critère de validation** : un élève ayant terminé un cours reçoit un certificat PDF téléchargeable avec son nom et le nom du cours.
+
+**Dépend de** : Étape 7 (cours CRUD) et Étape 10 (quiz solo) mergées.
+
+---
+
+### Étape 16 — Messagerie privée élèves/enseignants (Bah_Bouba)
+
+**Tâche : `feature/messaging`**
+
+    Créer `src/sockets/messaging.socket.js`. Gérer l'envoi et la réception de messages privés en temps réel entre élèves et enseignants via Socket.IO. Stocker les messages dans la collection `messages`. Route `GET /api/messages/:conversationId` pour l'historique.
+
+```js
+// src/sockets/messaging.socket.js
+// Gère les événements : sendMessage, receiveMessage, markAsRead
+
+// src/controllers/messages.controller.js
+// getConversationHistory() : retourne les messages d'une conversation
+```
+
+**Critère de validation** : un élève envoie un message à son enseignant, l'enseignant le reçoit en temps réel sans recharger la page. L'historique est persistant.
+
+**Dépend de** : Étape 9 (socket config) mergée. Tâche complexe — réservée à Bah_Bouba.
+
+---
+
+### Étape 17 — Défis 1v1 et tournois (LamineDev + Yassine en binôme)
+
+**Tâche : `feature/defis-tournois`**
+
+    Routes pour créer un défi 1v1 entre deux apprenants sur un quiz existant. Gérer l'acceptation du défi, le déroulement en temps réel via Socket.IO, et la désignation du vainqueur. Stocker les résultats dans la collection `defis`.
+
+```js
+// src/sockets/defi.socket.js
+// Gère les événements : challengeUser, acceptChallenge, submitAnswer, declareWinner
+
+// src/controllers/defis.controller.js
+// createDefi(), getDefiStatus()
+```
+
+**Critère de validation** : deux élèves participent à un défi 1v1, le gagnant est désigné automatiquement à la fin et son score est mis à jour.
+
+**Dépend de** : Étape 11 (quiz multijoueur) et Étape 16 mergées.
+
+---
+
+### Étape 18 — Classements globaux et par matière (Yassine)
+
+**Tâche : `feature/leaderboards`**
+
+    Route `GET /api/leaderboard` pour le classement général. Route `GET /api/leaderboard/:subject` pour le classement par matière. Calculer le score cumulatif de chaque élève à partir des `quizResults` et `evalResults`. Résultats paginés par 50.
+
+```js
+// src/services/leaderboard.service.js
+// computeLeaderboard() : agrège les scores depuis Firestore et trie les résultats
+
+// src/controllers/leaderboard.controller.js
+// getGlobalLeaderboard(), getLeaderboardBySubject()
+```
+
+**Critère de validation** : le classement global affiche les 50 meilleurs élèves avec leur score total. Le classement par matière filtre correctement.
+
+**Dépend de** : Étape 10 et Étape 12 mergées.
+
+---
+
+### Étape 19 — Notifications push PWA (Bah_Bouba)
+
+**Tâche : `feature/push-notifications`**
+
+    Implémenter le système de notifications push via l'API Web Push (VAPID keys). Stocker les souscriptions des utilisateurs dans Firestore. Envoyer des notifications push lors d'événements clés : nouveau message, badge obtenu, défi reçu, résultat de quiz disponible.
+
+```js
+// src/services/push.service.js
+// sendPushNotification() : envoie une notification push via web-push
+
+// src/controllers/notifications.controller.js
+// subscribeToNotifications(), getNotifications()
+```
+
+**Critère de validation** : un élève reçoit une notification push sur son téléphone (même avec l'app fermée) quand son enseignant lui envoie un message.
+
+**Dépend de** : Étape 16 mergée.
+
+---
+
+### Fin du Module 3 — Ce que nous devons avoir comme résultats
+
+- Un élève cumule des badges automatiquement selon ses performances.
+- Les certificats PDF sont générables et téléchargeables.
+- La messagerie privée fonctionne en temps réel.
+- Les défis 1v1 entre apprenants sont opérationnels.
+- Les classements global et par matière s'affichent correctement.
+- Les notifications push arrivent sur mobile hors-ligne.
+- Déployé en production sur `main`.
+
+---
+
+## MODULE 4 — Scalabilité, Sécurité & Supervision 🚀 *(Spécialisation Djangou V1 Finale)*
+
+> Durée estimée : 3 à 4 semaines
+> *Note : L'intégration d'un portail dédié au Ministère de l'Éducation pour les concours officiels a été scindée et sera développée dans un projet distinct (Djangou V2).*
+
+### Étape 20 — Supervision WebRTC (LamineDev + Bah_Bouba)
+
+**Tâche : `feature/webrtc-supervision`**
+
+    Implémenter la vidéo-surveillance en direct pendant les évaluations et les quiz importants.
+    - Demander l'autorisation caméra `getUserMedia` côté Frontend.
+    - Utiliser WebRTC / Socket.IO pour streamer ou envoyer des "snapshots" (photos toutes les X secondes) vers le Dashboard enseignant.
+    - Le professeur voit une grille en temps réel de tous les élèves en train de composer.
+
+```js
+// src/sockets/supervision.socket.js
+// Gère l'échange de signaux WebRTC (offers/answers/ice-candidates) ou snapshots
+```
+
+**Critère de validation** : un enseignant qui lance une évaluation voit les visages des étudiants en direct. Si un étudiant quitte l'onglet, sa bordure devient rouge.
+
+**Dépend de** : Module 3 entièrement déployé en production.
+
+---
+
+### Étape 21 — Correction Massive & Traitement par Lots (Yassine)
+
+**Tâche : `feature/mass-scoring`**
+
+    Optimiser le moteur de correction (`scoring.service.js`) pour supporter des évaluations massives (des milliers d'étudiants).
+    - Mettre en place un système de traitement par Queue (ex: `bullmq` avec Redis) ou des batches Firestore (limités à 500 opérations) pour éviter les timeouts lors de la soumission de 5000 copies d'un coup.
+
+```js
+// src/services/scoring.queue.js
+// processAnswersBatch(), calcule silencieusement et massivement
+```
+
+**Critère de validation** : terminer une évaluation de 1000 élèves ne bloque pas le serveur Node.js et les résultats sont disponibles en moins d'une minute de manière fiable.
+
+**Dépend de** : Étape 20 mergée.
+
+---
+
+### Étape 22 — Scalabilité Horizontale Socket.IO (Bah_Bouba)
+
+**Tâche : `feature/socket-redis-adapter`**
+
+    Préparer notre serveur temps réel à encaisser des milliers de connexions simultanées, utile pour les gros tournois ou évaluations de masse.
+    - Installer et configurer `@socket.io/redis-adapter` pour relier plusieurs processus Node.js s'ils tournent sur plusieurs serveurs (ou instances Render).
+
+```js
+// src/config/socket.js
+// Ajout du RedisAdapter (pub/sub)
+```
+
+**Critère de validation** : un test de charge avec 500+ connexions simultanées via Artillery ou un outil de test Socket.IO passe avec succès.
+
+**Dépend de** : Étape 21 mergée. Tâche technique critique — réservée à Bah_Bouba.
+
+---
+
+### Étape 23 — Export Officiel PDF/Excel (LamineDev)
+
+**Tâche : `feature/eval-export`**
+
+    Route `GET /api/evaluations/:id/export/pdf` et `GET /api/evaluations/:id/export/excel`.
+    - Permettre au professeur de télécharger le classement définitif, avec noms, scores et alertes de triche en fichier physique (utilisable comme PV).
+
+```js
+// src/services/export.service.js
+// exportToPDF() : génère le classement en PDF officiel
+// exportToExcel() : génère le classement en fichier Excel (.xlsx)
+```
+
+**Critère de validation** : un enseignant clique sur un bouton et reçoit un fichier Excel bien formaté avec la note de tous ses élèves.
+
+**Dépend de** : Étape 22 mergée.
+
+---
+
+### Fin du Module 4 (V1 COMPLETE) — Résultat Djangou ultime
+
+- La plateforme peut gérer des universités entières simultanément sans crash.
+- La triche est traquée visuellement et automatiquement signalée.
+- Les professeurs ont une maîtrise et une visibilité parfaite sur les étudiants à distance (WebRTC).
+- Toutes les données sont exportables proprement.
+- Déployé en production sur `main`. Djangou V1 est prêt à être commercialisé massivement !
+
+---
+
 ## Comment progresser ensemble ?
 
 - **LamineDev** démarre seul sur toute la configuration de base (étape 1)

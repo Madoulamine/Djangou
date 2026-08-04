@@ -8,6 +8,7 @@ const COLLECTIONS = Object.freeze({
   QUIZ_RESULTS: "quizResults",
   EVAL_RESULTS: "evalResults",
   MESSAGES: "messages",
+  CONVERSATIONS: "conversations",
   NOTIFICATIONS: "notifications",
   BADGES: "badges",
   CERTIFICATIONS: "certifications",

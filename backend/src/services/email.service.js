@@ -1,18 +1,17 @@
 const nodemailer = require("nodemailer");
 
-// Cree et configure le transporteur SMTP une seule fois (singleton).
-function createTransporter() {
-    return nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: Number(process.env.SMTP_PORT) || 587,
-        // Activer TLS uniquement si le port est 465 (SMTPS), sinon STARTTLS sur 587.
-        secure: Number(process.env.SMTP_PORT) === 465,
-        auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS,
-        },
-    });
-}
+// Singleton : le transporteur SMTP est créé une seule fois au chargement du module
+// et réutilisé pour tous les envois. Évite de recréer une connexion TCP à chaque email.
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: Number(process.env.SMTP_PORT) || 587,
+  // TLS uniquement sur le port 465 (SMTPS), sinon STARTTLS sur 587.
+  secure: Number(process.env.SMTP_PORT) === 465,
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
 
 /**
  * Envoie un email avec le lien de reinitialisation du mot de passe.
@@ -21,26 +20,24 @@ function createTransporter() {
  * @param {string} options.resetLink - URL complète contenant le token UUID.
  */
 async function sendResetPasswordEmail({ to, resetLink }) {
-    if (
-        !process.env.SMTP_HOST ||
-        !process.env.SMTP_USER ||
-        !process.env.SMTP_PASS
-    ) {
-        const error = new Error("Configuration SMTP manquante.");
-        error.statusCode = 500;
-        throw error;
-    }
+  if (
+    !process.env.SMTP_HOST ||
+    !process.env.SMTP_USER ||
+    !process.env.SMTP_PASS
+  ) {
+    const error = new Error("Configuration SMTP manquante.");
+    error.statusCode = 500;
+    throw error;
+  }
 
-    const transporter = createTransporter();
-
-    const mailOptions = {
-        from: process.env.FROM_EMAIL || `"Djangou" <${process.env.SMTP_USER}>`,
-        to,
-        subject: "Réinitialisation de votre mot de passe Djangou",
-        // Version texte brut pour les clients mail qui ne supportent pas le HTML.
-        text: `Bonjour,\n\nVous avez demandé la réinitialisation de votre mot de passe.\n\nCliquez sur ce lien (valable 1 heure) :\n${resetLink}\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez cet email.\n\nL'équipe Djangou`,
-        // Version HTML avec un design simple et lisible.
-        html: `
+  const mailOptions = {
+    from: process.env.FROM_EMAIL || `"Djangou" <${process.env.SMTP_USER}>`,
+    to,
+    subject: "Réinitialisation de votre mot de passe Djangou",
+    // Version texte brut pour les clients mail qui ne supportent pas le HTML.
+    text: `Bonjour,\n\nVous avez demandé la réinitialisation de votre mot de passe.\n\nCliquez sur ce lien (valable 1 heure) :\n${resetLink}\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez cet email.\n\nL'équipe Djangou`,
+    // Version HTML avec un design simple et lisible.
+    html: `
       <!DOCTYPE html>
       <html lang="fr">
         <head>
@@ -102,9 +99,56 @@ async function sendResetPasswordEmail({ to, resetLink }) {
         </body>
       </html>
     `,
-    };
+  };
 
-    await transporter.sendMail(mailOptions);
+  await transporter.sendMail(mailOptions);
 }
 
-module.exports = { sendResetPasswordEmail };
+/**
+ * Envoie un email d'invitation à une évaluation.
+ * @param {string} studentEmail 
+ * @param {string} evalTitle 
+ * @param {string} evalLink 
+ * @param {string} evalDate
+ */
+async function sendEvaluationInvite(studentEmail, evalTitle, evalLink, evalDate) {
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    console.log(`[Email Service] 📧 Simulation d'invitation pour ${studentEmail}. SMTP manquant.`);
+    return;
+  }
+
+  const mailOptions = {
+    from: process.env.FROM_EMAIL || `"Djangou Évaluations" <${process.env.SMTP_USER}>`,
+    to: studentEmail,
+    subject: `Convocation à l'évaluation : ${evalTitle}`,
+    html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
+                <h2 style="color: #2c3e50; text-align: center;">Djangou - Convocation Officielle</h2>
+                <p>Bonjour,</p>
+                <p>Vous avez été convoqué pour participer à l'évaluation en ligne suivante :</p>
+                <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #3498db;">
+                    <p style="margin: 0 0 10px 0;"><strong>Matière / Titre :</strong> ${evalTitle}</p>
+                    <p style="margin: 0;"><strong>Date d'ouverture :</strong> ${evalDate || "Immédiat"}</p>
+                </div>
+                <p>Pour rejoindre la salle d'attente (avec votre lien d'accès unique), veuillez cliquer sur le bouton ci-dessous :</p>
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="${evalLink}" style="background-color: #3498db; color: white; padding: 12px 25px; border-radius: 5px; text-decoration: none; font-weight: bold; display: inline-block;">
+                        Accéder à la Salle d'Évaluation
+                    </a>
+                </div>
+                <p><em>Attention : Ce lien vous est strictement personnel. Votre accès est sécurisé (valide uniquement pour <strong>${studentEmail}</strong>).</em></p>
+                <hr style="border: 0; border-top: 1px solid #e0e0e0; margin: 20px 0;">
+                <p style="font-size: 11px; color: #7f8c8d; text-align: center;">Système anti-triche Djangou activé durant l'épreuve.</p>
+            </div>
+        `
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`[Email Service] 📧 Invitation envoyée à ${studentEmail} (Message ID: ${info.messageId})`);
+  } catch (error) {
+    console.error(`[Email Service] ❌ Erreur d'envoi SMTP à ${studentEmail} :`, error);
+  }
+}
+
+module.exports = { sendResetPasswordEmail, sendEvaluationInvite };
