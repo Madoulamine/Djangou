@@ -15,6 +15,7 @@ const messagingRoutes = require("./routes/messaging.routes");
 const defisRoutes = require("./routes/defis.routes");
 const leaderboardRoutes = require("./routes/leaderboard.routes");
 const notificationsRoutes = require("./routes/notifications.routes");
+const exportRoutes = require("./routes/export.routes");
 
 const app = express();
 
@@ -106,6 +107,7 @@ app.use("/api/messages", messagingRoutes);
 app.use("/api/defis", defisRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
 app.use("/api/notifications", notificationsRoutes);
+app.use("/api/export", exportRoutes);
 
 app.use((req, res, next) => {
   const error = new Error("Route introuvable");
