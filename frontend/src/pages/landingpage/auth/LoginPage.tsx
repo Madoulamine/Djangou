@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import logo from '../../../assets/images/logo.png'
+import { BrandLogo } from '../../../components/shared/BrandLogo'
 import { SocialLogin } from '../../../components/ui/SocialLogin'
 
 const IconMail = () => (
@@ -30,9 +30,9 @@ export function LoginPage() {
   return (
     <div className="auth-layout">
       <div className="auth-card">
-        {/* Logo */}
+        {/* Logo — uses shared BrandLogo component */}
         <div className="auth-card__logo">
-          <img src={logo} alt="Djangou" />
+          <BrandLogo variant="full" />
         </div>
 
         {/* Title */}
@@ -43,7 +43,6 @@ export function LoginPage() {
 
         {/* Form */}
         <form className="auth-form" onSubmit={e => e.preventDefault()}>
-          {/* Email */}
           <div className="field">
             <label htmlFor="email">Adresse e-mail</label>
             <div className="field-input field-input--icon">
@@ -52,7 +51,6 @@ export function LoginPage() {
             </div>
           </div>
 
-          {/* Password */}
           <div className="field">
             <label htmlFor="password">Mot de passe</label>
             <div className="field-input field-input--icon field-input--action">
@@ -64,7 +62,6 @@ export function LoginPage() {
             </div>
           </div>
 
-          {/* Row: remember / forgot */}
           <div className="auth-row">
             <label>
               <input type="checkbox" style={{ width: 15, height: 15, accentColor: 'var(--blue)' }} />
